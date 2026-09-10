@@ -194,6 +194,57 @@ label{
 textarea{resize:vertical; line-height:1.5}
 .flex{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
 
+
+/* ── Plain-language layer ─────────────────────────────────────────────── */
+.lede{
+  font-size:16.5px; line-height:1.5; max-width:56ch; color:var(--ink);
+  margin:6px 0 10px; letter-spacing:-.004em; text-wrap:pretty;
+}
+
+/* Three outcomes, one object repeated. The stripe carries the answer, so
+   the shape reads before the words do. */
+.answers{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); margin-top:10px}
+.answer{
+  background:var(--surface-2); border:1px solid var(--line);
+  border-top:3px solid var(--line-strong); border-radius:0 0 8px 8px; padding:14px 15px;
+}
+.answer-word{font-size:19px; font-weight:680; letter-spacing:-.015em; line-height:1.15}
+.answer-meaning{font-size:12.5px; margin:6px 0 8px; color:var(--ink-2)}
+.answer ul.plain{margin:0 0 8px; padding-left:17px}
+.answer ul.plain li{margin:4px 0; color:var(--ink-2)}
+.answer p.tiny.muted{margin:0}
+.answer-rules{font-size:11.5px; color:var(--muted); margin:0 0 9px; line-height:2}
+.answer-rules code{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:4px; padding:2px 6px; color:var(--ink-2); font-size:11px;
+}
+.a-no{border-top-color:var(--deny)}      .a-no  .answer-word{color:var(--deny)}
+.a-if{border-top-color:var(--allow)}     .a-if  .answer-word{color:var(--allow)}
+.a-who{border-top-color:var(--warn)}     .a-who .answer-word{color:var(--warn)}
+
+/* ── Glossary ─────────────────────────────────────────────────────────── */
+.glossary{
+  display:grid; grid-template-columns:minmax(120px,auto) 1fr;
+  gap:8px 18px; margin:8px 0 0; font-size:12.5px; align-items:baseline;
+}
+.glossary dt{font-weight:650; color:var(--ink)}
+.glossary dd{margin:0; color:var(--muted); max-width:70ch}
+@media (max-width:560px){
+  .glossary{grid-template-columns:1fr; gap:2px 0}
+  .glossary dd{margin-bottom:10px}
+}
+
+/* ── Progressive disclosure ───────────────────────────────────────────── */
+details.deep{margin-top:26px; border-top:1px solid var(--line); padding-top:6px}
+details.deep > summary{
+  cursor:pointer; list-style:none; padding:12px 0 4px;
+  font-size:13px; font-weight:620; color:var(--accent);
+}
+details.deep > summary::-webkit-details-marker{display:none}
+details.deep > summary::before{content:"▸ "; display:inline-block; transition:transform .15s}
+details.deep[open] > summary::before{content:"▾ "}
+details.deep > summary:hover{text-decoration:underline; text-underline-offset:3px}
+
 @media (max-width:560px){
   .wrap{padding-inline:16px}
   .masthead{align-items:flex-start}
@@ -691,10 +742,58 @@ function obligationSVG() {
   </svg>`;
 }
 
+function journeySVG() {
+  const step = (x, n, title, l1, l2) => `
+    <rect x="${x}" y="24" width="160" height="104" rx="8" fill="none"
+          stroke="currentColor" stroke-width="1.4"/>
+    <text x="${x + 80}" y="48" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".55" letter-spacing="1.2">STEP ${n}</text>
+    <text x="${x + 80}" y="70" text-anchor="middle" font-size="14.5" font-weight="650"
+          fill="currentColor">${title}</text>
+    <text x="${x + 80}" y="90" text-anchor="middle" font-size="11" fill="currentColor"
+          opacity=".75">${l1}</text>
+    <text x="${x + 80}" y="104" text-anchor="middle" font-size="11" fill="currentColor"
+          opacity=".75">${l2}</text>
+    <line x1="${x + 80}" y1="128" x2="${x + 80}" y2="168" stroke="currentColor"
+          stroke-width="1" opacity=".35" stroke-dasharray="3 3"/>`;
+  const gap = x => `<line x1="${x}" y1="76" x2="${x + 18}" y2="76" stroke="currentColor"
+      stroke-width="1.4" marker-end="url(#ah)"/>`;
+  return `<svg viewBox="0 0 720 244" role="img" xmlns="http://www.w3.org/2000/svg"
+      aria-label="Four steps: read the document, decide whether it may go to this AI, strip out the identifying details, then send the cleaned version. Every step is written to a log that cannot be edited.">
+    ${ARROW_DEFS}
+    ${step(10,  1, 'Read', "What's in this", 'document?')}
+    ${step(190, 2, 'Decide', 'May it go to', 'this AI at all?')}
+    ${step(370, 3, 'Clean', 'Swap out names,', 'IDs and dates')}
+    ${step(550, 4, 'Ask', 'Send only the', 'cleaned version')}
+    ${gap(170)}${gap(350)}${gap(530)}
+    <rect x="10" y="168" width="700" height="56" rx="8" fill="none" stroke="currentColor"
+          stroke-width="1.4" opacity=".8"/>
+    <text x="360" y="192" text-anchor="middle" font-size="12.5" font-weight="650"
+          fill="currentColor">Every step above is written to a log that cannot be edited</text>
+    <text x="360" y="210" text-anchor="middle" font-size="11" fill="currentColor"
+          opacity=".7">Change one entry and every entry after it stops matching.</text>
+  </svg>`;
+}
+
+const PLAIN = [
+  ['Policy pack', 'The rulebook for one set of regulations. Swap the pack, swap the rules - the software underneath never changes.'],
+  ['Restricted', 'Sensitive. May be used, but only under conditions.'],
+  ['Prohibited', 'Off limits. There is no way to send it, to any AI, ever.'],
+  ['PHI', 'Protected health information - anything that identifies a patient and relates to their care.'],
+  ['Redaction', 'Swapping a real detail for a placeholder before it leaves the building: "Dolores Ashgrove" becomes [PATIENT_1].'],
+  ['The vault', 'The private table that remembers which placeholder meant which person. It never leaves this machine, which is how the answer can be turned back into something readable for the doctor.'],
+  ['Obligation', 'A string attached to a yes. "You may, but only if you redact first." If a string cannot be tied, the yes becomes a no.'],
+  ['Minimum necessary', 'Send only the part needed for the job. A summary of a treatment does not need the billing section.'],
+  ['BAA', 'The contract a provider signs before it is allowed to touch patient data on your behalf.'],
+  ['Audit chain', 'The log, linked entry to entry so that editing any one of them is detectable.'],
+];
+
 async function renderArch() {
   const p = await api('/api/pack/' + S.active_pack);
   const denies = p.rules.filter(r => r.decision === 'deny');
   const allows = p.rules.filter(r => r.decision === 'allow');
+  const needsPerson = allows.filter(r => r.obligations.some(o => o.startsWith('approve')));
+  const conditional = allows.filter(r => !r.obligations.some(o => o.startsWith('approve')));
   const restricted = p.routing.restricted || {};
 
   let decidedAt = null, lastLine = '';
@@ -710,6 +809,19 @@ async function renderArch() {
       <b class="mono">${esc(rid)}</b>.</p>`;
   }
 
+  // The rule descriptions are written for the person maintaining the pack, not
+  // for someone hearing about this for the first time. Naming the rules keeps
+  // the plain layer plain and still updates when the pack changes; the full
+  // wording is a click away in the precise version.
+  const answer = (word, cls, meaning, rules, note) => `
+    <div class="answer ${cls}">
+      <div class="answer-word">${word}</div>
+      <p class="answer-meaning">${meaning}</p>
+      ${rules.length ? `<p class="answer-rules">in this rulebook:
+        ${rules.map(r => `<code>${esc(r.id)}</code>`).join(' ')}</p>` : ''}
+      <p class="tiny muted">${note}</p>
+    </div>`;
+
   const stage = (n, title, body) => `
     <div class="rule ${decidedAt === n ? 'allowr' : ''}">
       <div><b>${n} · ${esc(title)}</b>${decidedAt === n
@@ -718,73 +830,102 @@ async function renderArch() {
     </div>`;
 
   $('#t-arch').innerHTML = `<div class="panel">
-    <h2>How a decision gets made</h2>
-    <p class="tiny muted">Everything below is read from the pack that is loaded right now
-      (<b class="mono">${esc(p.id)}@${esc(p.version)}</b>). Switch packs in the header and
-      this page changes with it - that is the claim the whole design rests on.</p>
+    <h2>The short version</h2>
+    <p class="lede">Nothing reaches an AI model until a rulebook has said yes - and said
+      what has to be stripped out first. Everything that happens is written to a log
+      that cannot be quietly edited.</p>
+    <p class="tiny muted">The rulebook loaded right now is
+      <b class="mono">${esc(p.id)}@${esc(p.version)}</b> ${esc(p.name)}. Change it in the
+      header and everything on this page changes with it. That is the whole idea: the
+      regulations live in files, not in the software.</p>
 
-    <figure>
-      ${ladderSVG(decidedAt)}
-      <figcaption class="tiny muted">Four gates, evaluated in this order every time. There is
-        no priority arithmetic and no most-specific-match rule to explain: deny rules get the
-        first word, the routing gate is a hard floor beneath every allow, and anything that
-        reaches the bottom without matching is denied.</figcaption>
+    <figure>${journeySVG()}
+      <figcaption>The same four steps run for every document, every time.</figcaption>
     </figure>
-    ${lastLine}
 
-    ${stage(1, 'Deny rules run first', `
-      Written to be unconditional, so they cannot be talked past by a later rule.
-      ${denies.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
-        ${esc(r.description)} <span class="cite">${esc(r.citation)}</span></div>`).join('')}`)}
+    <h2>Every request gets one of three answers</h2>
+    <div class="answers">
+      ${answer('No', 'a-no', 'Some things never go, no matter which AI you point at, and no matter who asks.',
+               denies, `${denies.length} rule${denies.length === 1 ? '' : 's'} in this pack say no outright.`)}
+      ${answer('Yes, if…', 'a-if', 'Allowed - but only once conditions are met. Redact the names first. Send only the section needed.',
+               conditional, 'If a condition cannot be met, the yes becomes a no and is logged as one.')}
+      ${answer('Ask a person', 'a-who', "Some decisions are not the software's to make. It stops and waits for a named human role.",
+               needsPerson, needsPerson.length
+                 ? 'The queue checks the role: the wrong person is refused, and the refusal is logged too.'
+                 : 'This pack has no rule that stops for a human.')}
+    </div>
+    <p class="tiny muted" style="margin-top:14px">And if none of the rules match, the answer is
+      <b>no</b>. That is the default, and a rulebook is not permitted to change it - a pack
+      that tries fails to load.</p>
 
-    ${stage(2, 'Then the routing gate', `
-      Sourced from <code>routing.yaml</code>. The pack states what a model must <i>be</i>;
-      <code>config/models.yaml</code> states what each model <i>is</i>. Data classified
-      <b>restricted</b> under this pack requires:
-      ${Object.keys(restricted).length
-        ? `<code>${esc(JSON.stringify(restricted))}</code>`
-        : '<i>no constraint</i>'}.
-      This is why a model can hold a BAA and still be refused - a US-only rule rejects an
-      endpoint that may run inference in the EU.`)}
+    <h2>What the words mean</h2>
+    <dl class="glossary">
+      ${PLAIN.map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join('')}
+    </dl>
 
-    ${stage(3, 'Then allow rules, first match wins', `
-      An allow is never bare: it carries obligations, and the pack's
-      <code>always</code> block (${esc(p.always.join(', ')) || 'none'}) is merged into every one.
-      ${allows.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
-        ${esc(r.description)}</div>`).join('')}`)}
+    <details class="deep">
+      <summary>The precise version - how the decision is actually reached</summary>
 
-    ${stage(4, 'Otherwise, deny', `
-      <i>${esc(p.rules.length ? (S.packs.find(x => x.id === p.id) ? '' : '') : '')}</i>
-      Nothing matched, so nothing is permitted. A pack cannot opt out of this - a
-      <code>rules.yaml</code> declaring <code>default: allow</code> fails to load.`)}
+      <figure>${ladderSVG(decidedAt)}
+        <figcaption>Four gates, evaluated in this order every time. No priority arithmetic
+          and no most-specific-match rule to explain: deny rules get the first word, the
+          routing gate is a hard floor beneath every allow, and anything reaching the
+          bottom unmatched is denied.</figcaption>
+      </figure>
+      ${lastLine}
 
-    <h2>An allow is not yet permission</h2>
-    <figure>
-      ${obligationSVG()}
-      <figcaption class="tiny muted">The decision is binary; everything else a regime demands
-        rides along as an obligation. The gateway must discharge all of them, in the order
-        shown, before a single byte leaves the machine.</figcaption>
-    </figure>
-    <p class="tiny">The ordering carries real constraints. <code>approve</code> blocks early,
-      so no work is done on data that may never be released. <code>redact</code> must precede
-      <code>minimum_necessary</code>, because detection spans are offsets into the document as
-      classified and removing a section invalidates them - the gateway checks this and fails
-      closed rather than redacting the wrong bytes.</p>
-    <p class="tiny"><b>An allow whose obligations cannot all be met is a deny</b>, recorded as
-      one. That single property is what makes the rest of this trustworthy: there is no path
-      where policy said yes, the condition was skipped, and the call went out anyway.</p>
+      ${stage(1, 'Deny rules run first', `
+        Written to be unconditional, so they cannot be talked past by a later rule.
+        ${denies.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
+          ${esc(r.description)} <span class="cite">${esc(r.citation)}</span></div>`).join('')}`)}
 
-    <h2>Why the log can be believed</h2>
-    <p class="tiny">Every model call in the system goes through one function, so the audit log
-      is complete rather than best-effort. Each entry's hash covers its own contents
-      <i>and</i> the previous entry's hash, so altering any entry breaks every hash after it -
-      try it yourself on the Audit log tab.</p>
-    <p class="tiny muted">What that does not protect is the newest entry: nothing commits to it
-      yet, so it can be rewritten and rehashed cleanly. Closing that gap means anchoring the
-      head hash somewhere the operator does not control. Worth saying out loud before someone
-      in the room asks.</p>
+      ${stage(2, 'Then the routing gate', `
+        Sourced from <code>routing.yaml</code>. The pack states what a model must <i>be</i>;
+        <code>config/models.yaml</code> states what each model <i>is</i>. Data classified
+        <b>restricted</b> under this pack requires:
+        ${Object.keys(restricted).length
+          ? `<code>${esc(JSON.stringify(restricted))}</code>` : '<i>no constraint</i>'}.
+        This is why a model can hold a BAA and still be refused - a US-only rule rejects an
+        endpoint that may run inference in the EU.`)}
+
+      ${stage(3, 'Then allow rules, first match wins', `
+        An allow is never bare: it carries obligations, and the pack's
+        <code>always</code> block (${esc(p.always.join(', ')) || 'none'}) merges into every one.
+        ${allows.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
+          ${esc(r.description)}</div>`).join('')}`)}
+
+      ${stage(4, 'Otherwise, deny', `
+        Nothing matched, so nothing is permitted. A pack cannot opt out of this - a
+        <code>rules.yaml</code> declaring <code>default: allow</code> fails to load.`)}
+
+      <h2>An allow is not yet permission</h2>
+      <figure>${obligationSVG()}
+        <figcaption>The decision is binary; everything else a regime demands rides along as
+          an obligation. The gateway discharges all of them, in the order shown, before a
+          single byte leaves the machine.</figcaption>
+      </figure>
+      <p class="tiny">The ordering carries real constraints. <code>approve</code> blocks early,
+        so no work is done on data that may never be released. <code>redact</code> must precede
+        <code>minimum_necessary</code>, because detection spans are offsets into the document as
+        classified and removing a section invalidates them - the gateway checks this and fails
+        closed rather than redacting the wrong bytes.</p>
+      <p class="tiny"><b>An allow whose obligations cannot all be met is a deny</b>, recorded as
+        one. There is no path where policy said yes, the condition was skipped, and the call
+        went out anyway.</p>
+
+      <h2>Why the log can be believed</h2>
+      <p class="tiny">Every model call goes through one function, so the log is complete rather
+        than best-effort. Each entry's hash covers its own contents <i>and</i> the previous
+        entry's hash, so altering any entry breaks every hash after it - try it yourself on
+        the Audit log tab.</p>
+      <p class="tiny muted">What that does not protect is the newest entry: nothing commits to
+        it yet, so it can be rewritten and rehashed cleanly. Closing that gap means anchoring
+        the head hash somewhere the operator does not control. Worth saying out loud before
+        someone in the room asks.</p>
+    </details>
   </div>`;
 }
+
 
 // ------------------------------------------------------------------- init
 $('#ingest').onclick = async e => {

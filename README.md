@@ -43,6 +43,36 @@ changes.
 
 ---
 
+## Explaining it to someone in ninety seconds
+
+`./run serve` opens on a **How it works** tab written for someone hearing about
+this for the first time — a compliance officer, a VP, a customer. It reads from
+the pack that is loaded, so it is never out of date with the rules it describes.
+
+The three beats it is built around, in the order they land best:
+
+1. **"Nothing reaches an AI model until a rulebook says yes — and says what has
+   to be stripped out first."** One sentence, then the four steps: read, decide,
+   clean, ask. Underneath them, a log that cannot be edited.
+
+2. **"Every request gets one of three answers."** *No* — some things never go,
+   whichever model you point at. *Yes, if…* — allowed once conditions are met.
+   *Ask a person* — the software stops and waits for a named role. And if
+   nothing matches, the answer is no.
+
+3. **"The regulations live in files, not in the software."** Switch the pack in
+   the header. The rules, the routing requirements, and the three answers all
+   change; nothing was rebuilt.
+
+Then let them poke at it: try to send a patient note to a model with no BAA and
+watch it refuse, or press **Try to tamper with it** on the Audit log tab.
+
+*The precise version* — the four-gate evaluation ladder, the obligation
+discharge order, the fail-closed guarantee — is a disclosure below that, for
+whoever in the room wants it.
+
+---
+
 ## What it actually does
 
 ```
