@@ -5,87 +5,213 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Governed AI Data Pipeline</title>
 <style>
+/* ── Design tokens ──────────────────────────────────────────────────────
+   Subject: a governance control plane for regulated data. The neutrals carry
+   a slight cool-slate bias so they read as institutional rather than warm;
+   the accent is a deep teal-ink that holds on both grounds without becoming
+   corporate blue. Semantic colours (allow / deny / restricted) are kept
+   separate from the accent because they encode data, not emphasis. */
 :root{
-  --bg:#f7f7f5; --panel:#fff; --ink:#1a1a19; --dim:#6b6b66; --line:#e2e2dd;
-  --accent:#2f5d50; --allow:#1f6f43; --allow-bg:#e6f4ec; --deny:#a32b1f;
-  --deny-bg:#fbeae8; --warn:#8a5a00; --warn-bg:#fdf3e0; --code:#f2f2ee;
+  --ground:#f5f7f8; --surface:#fff; --surface-2:#f0f3f5;
+  --ink:#15191d; --ink-2:#3d4650; --muted:#697483;
+  --line:#dde3e8; --line-strong:#c6ced6;
+  --accent:#0e5d64; --accent-soft:#e3f0f1; --on-accent:#fff;
+  --allow:#0d6a3e; --allow-bg:#e2f2e8;
+  --deny:#a12419;  --deny-bg:#fbebe9;
+  --warn:#855000;  --warn-bg:#fcf0dc;
+  --shadow:0 1px 2px rgba(20,28,38,.05), 0 1px 1px rgba(20,28,38,.03);
+  --radius:9px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
-  --bg:#141513; --panel:#1c1e1b; --ink:#ecebe6; --dim:#9a9a92; --line:#2e312c;
-  --accent:#7fbfa8; --allow:#6fd39a; --allow-bg:#16301f; --deny:#f08a7d;
-  --deny-bg:#331815; --warn:#e0b45f; --warn-bg:#2e2411; --code:#232520;
+  --ground:#0f1215; --surface:#171b1f; --surface-2:#1e2429;
+  --ink:#e7ebef; --ink-2:#bcc5cf; --muted:#8b95a1;
+  --line:#252b32; --line-strong:#333c45;
+  --accent:#54b3ab; --accent-soft:#13292b; --on-accent:#07191b;
+  --allow:#66d199; --allow-bg:#11291d;
+  --deny:#f0877b;  --deny-bg:#2c1512;
+  --warn:#dfab57;  --warn-bg:#291f0f;
+  --shadow:none;
 }}
+:root[data-theme=dark]{
+  --ground:#0f1215; --surface:#171b1f; --surface-2:#1e2429;
+  --ink:#e7ebef; --ink-2:#bcc5cf; --muted:#8b95a1;
+  --line:#252b32; --line-strong:#333c45;
+  --accent:#54b3ab; --accent-soft:#13292b; --on-accent:#07191b;
+  --allow:#66d199; --allow-bg:#11291d;
+  --deny:#f0877b;  --deny-bg:#2c1512;
+  --warn:#dfab57;  --warn-bg:#291f0f;
+  --shadow:none;
+}
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif}
-code,pre,.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
-.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
-header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
-h1{font-size:19px;margin:0 0 3px}
-h2{font-size:15px;margin:24px 0 10px}
-h3{font-size:13px;margin:16px 0 6px;color:var(--dim);text-transform:uppercase;
-   letter-spacing:.06em}
-.sub{color:var(--dim);font-size:13px;margin:0}
-.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:7px;
-  padding:5px 10px;font-size:12px}
-.stat b{font-variant-numeric:tabular-nums}
-button,select,input,textarea{font:inherit;color:inherit;background:var(--panel);
-  border:1px solid var(--line);border-radius:7px;padding:6px 10px}
-button{cursor:pointer}
-button:hover{border-color:var(--accent)}
-button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
-button.primary:hover{filter:brightness(1.1)}
-button:disabled{opacity:.5;cursor:default}
-nav{display:flex;flex-wrap:wrap;gap:4px;margin:16px 0 4px;border-bottom:1px solid var(--line)}
-nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;
-  padding:8px 12px;color:var(--dim)}
-nav button[aria-current=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-  padding:14px;margin-top:14px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-   color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  font-size:14px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+code,pre,.mono{
+  font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,
+              "Cascadia Mono","Liberation Mono",monospace;
+  font-size:.92em; font-variant-ligatures:none;
+}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:20px; padding-block:24px 72px}
+
+/* ── Masthead ─────────────────────────────────────────────────────────── */
+.masthead{
+  display:flex; flex-wrap:wrap; gap:16px 28px; align-items:flex-end;
+  justify-content:space-between; padding-bottom:16px;
+  border-bottom:1px solid var(--line);
+}
+h1{font-size:19px; line-height:1.25; margin:0 0 3px; letter-spacing:-.012em; text-wrap:balance}
+.sub{color:var(--muted); font-size:13px; margin:0; max-width:52ch; text-wrap:pretty}
+.rail{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.stat{
+  display:inline-flex; align-items:baseline; gap:6px;
+  background:var(--surface); border:1px solid var(--line); border-radius:7px;
+  padding:5px 10px; font-size:11.5px; color:var(--muted); white-space:nowrap;
+  box-shadow:var(--shadow);
+}
+.stat b{color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums; font-weight:650}
+
+/* The honesty notice has to stay visible, but it is a caveat, not the
+   headline - so it sits under the masthead as a rule, not a yellow slab. */
+.notice{
+  display:flex; align-items:center; gap:9px;
+  margin:12px 0 0; padding:8px 12px; font-size:12px; color:var(--ink-2);
+  background:var(--warn-bg); border:1px solid transparent;
+  border-left:3px solid var(--warn); border-radius:0 6px 6px 0;
+}
+.notice b{color:var(--warn); font-weight:650}
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+button,select,input,textarea{
+  font:inherit; color:var(--ink); background:var(--surface);
+  border:1px solid var(--line-strong); border-radius:7px; padding:6px 10px;
+}
+select{cursor:pointer}
+button{cursor:pointer; transition:border-color .12s, background .12s}
+button:hover{border-color:var(--accent); background:var(--surface-2)}
+button.primary{
+  background:var(--accent); color:var(--on-accent);
+  border-color:var(--accent); font-weight:600;
+}
+button.primary:hover{filter:brightness(1.08); background:var(--accent)}
+button:disabled{opacity:.45; cursor:default}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────── */
+nav{display:flex; flex-wrap:wrap; gap:2px; margin:18px 0 0; border-bottom:1px solid var(--line)}
+nav button{
+  border:0; border-radius:0; background:none; padding:9px 13px;
+  color:var(--muted); font-size:13.5px; box-shadow:inset 0 -2px 0 transparent;
+}
+nav button:hover{background:none; color:var(--ink-2); box-shadow:inset 0 -2px 0 var(--line-strong)}
+nav button[aria-current=true]{color:var(--ink); font-weight:620; box-shadow:inset 0 -2px 0 var(--accent)}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────── */
+.panel{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:18px 20px; margin-top:16px;
+  box-shadow:var(--shadow);
+}
+h2{font-size:15.5px; margin:26px 0 4px; letter-spacing:-.008em; text-wrap:balance}
+h2:first-child{margin-top:0}
+h3{
+  font-size:10.5px; margin:20px 0 7px; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.09em; font-weight:650;
+}
+.panel > p{max-width:70ch}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+.scroll{overflow-x:auto; margin-inline:-4px; padding-inline:4px}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{
+  text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); font-weight:650; padding:0 10px 7px; white-space:nowrap;
+  border-bottom:1px solid var(--line-strong);
+}
+td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+tbody tr:last-child td, tr:last-child td{border-bottom:0}
+td.mono, .tabular{font-variant-numeric:tabular-nums}
 tr.clickable{cursor:pointer}
-tr.clickable:hover td{background:var(--code)}
-.scroll{overflow-x:auto}
-.chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;
-  font-weight:600;white-space:nowrap}
-.public,.internal{background:var(--code);color:var(--dim)}
-.restricted{background:var(--warn-bg);color:var(--warn)}
-.prohibited,.deny{background:var(--deny-bg);color:var(--deny)}
-.allow{background:var(--allow-bg);color:var(--allow)}
-pre{background:var(--code);border:1px solid var(--line);border-radius:7px;
-  padding:11px;overflow-x:auto;font-size:12px;margin:6px 0;white-space:pre-wrap;
-  word-break:break-word}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--dim);margin-bottom:4px}
-.field{margin-bottom:10px}
-.field input,.field select,.field textarea{width:100%}
-.cite{color:var(--dim);font-size:12px}
-.rule{border-left:3px solid var(--line);padding:8px 0 8px 12px;margin:10px 0}
+tr.clickable:hover td{background:var(--surface-2)}
+
+/* ── State chips ──────────────────────────────────────────────────────── */
+.chip{
+  display:inline-block; padding:1.5px 8px; border-radius:20px;
+  font-size:10.5px; font-weight:650; letter-spacing:.02em; white-space:nowrap;
+  border:1px solid transparent;
+}
+.public,.internal{background:var(--surface-2); color:var(--muted); border-color:var(--line)}
+.restricted{background:var(--warn-bg); color:var(--warn)}
+.prohibited,.deny{background:var(--deny-bg); color:var(--deny)}
+.allow{background:var(--allow-bg); color:var(--allow)}
+
+/* ── Rule blocks: the stripe encodes the decision, which is real state ── */
+.rule{border-left:3px solid var(--line-strong); padding:9px 0 9px 14px; margin:12px 0}
 .rule.allowr{border-left-color:var(--allow)}
 .rule.denyr{border-left-color:var(--deny)}
-.muted{color:var(--dim)}
-.banner{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor;
-  border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;font-weight:600}
-.tiny{font-size:11.5px}
-ul.plain{margin:4px 0;padding-left:18px}
-.flex{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+
+/* ── Figures ──────────────────────────────────────────────────────────── */
+figure{margin:18px 0; padding:0}
+figure svg{
+  display:block; margin:0 auto; width:100%; max-width:660px; height:auto;
+  color:var(--ink-2);
+}
+figure svg .hot{stroke:var(--accent); stroke-width:2.6}
+figcaption{
+  margin:12px auto 0; text-align:center; max-width:62ch;
+  color:var(--muted); font-size:12px;
+}
+
+/* ── Type utilities ───────────────────────────────────────────────────── */
+pre{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:7px;
+  padding:12px 13px; overflow-x:auto; font-size:12px; margin:8px 0;
+  white-space:pre-wrap; word-break:break-word; line-height:1.5; color:var(--ink-2);
+}
+.cite{color:var(--muted); font-size:12px}
+.muted{color:var(--muted)}
+.tiny{font-size:12px}
+.tiny.muted{line-height:1.5}
+ul.plain{margin:6px 0; padding-left:19px}
+ul.plain li{margin:3px 0}
+p code{
+  background:var(--surface-2); border:1px solid var(--line);
+  border-radius:4px; padding:.5px 4px;
+}
+
+/* ── Forms ────────────────────────────────────────────────────────────── */
+.grid{display:grid; gap:12px 14px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+label{
+  display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); font-weight:650; margin-bottom:5px;
+}
+.field{margin-bottom:12px}
+.field input,.field select,.field textarea{width:100%}
+textarea{resize:vertical; line-height:1.5}
+.flex{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+
+@media (max-width:560px){
+  .wrap{padding-inline:16px}
+  .masthead{align-items:flex-start}
+  .panel{padding:15px 14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="banner">Synthetic data only. Every document here is fabricated for demonstration; none of it describes a real person.</div>
-
-<header>
-  <h1>Governed AI Data Pipeline</h1>
-  <p class="sub">LLM workloads over regulated data, with controls that are enforced rather than asserted.</p>
-  <div class="bar">
+<header class="masthead">
+  <div style="flex:1 1 340px">
+    <h1>Governed AI Data Pipeline</h1>
+    <p class="sub">LLM workloads over regulated data, with controls that are enforced rather than asserted.</p>
+  </div>
+  <div class="rail">
     <span class="stat">pack
-      <select id="packsel" style="padding:2px 6px;margin-left:4px"></select>
+      <select id="packsel" aria-label="Active policy pack"></select>
     </span>
     <span class="stat" id="chain">chain …</span>
     <span class="stat">audit <b id="c-audit">0</b></span>
@@ -95,15 +221,20 @@ ul.plain{margin:4px 0;padding-left:18px}
   </div>
 </header>
 
+<p class="notice"><b>Synthetic data only.</b> Every document here is fabricated for
+  demonstration; none of it describes a real person.</p>
+
 <nav>
-  <button data-tab="docs" aria-current="true">Documents</button>
+  <button data-tab="arch" aria-current="true">How it works</button>
+  <button data-tab="docs">Documents</button>
   <button data-tab="policy">Policy pack</button>
   <button data-tab="run">Run a call</button>
   <button data-tab="approvals">Approvals</button>
   <button data-tab="audit">Audit log</button>
 </nav>
 
-<section id="t-docs"></section>
+<section id="t-arch"></section>
+<section id="t-docs" hidden></section>
 <section id="t-policy" hidden></section>
 <section id="t-run" hidden></section>
 <section id="t-approvals" hidden></section>
@@ -140,16 +271,18 @@ async function refresh() {
 }
 
 // ------------------------------------------------------------------ tabs
-let TAB = 'docs';
+let TAB = 'arch';
+let LAST = null;   // the most recent gateway result, for the architecture overlay
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   TAB = b.dataset.tab;
   document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-current', x===b));
-  ['docs','policy','run','approvals','audit'].forEach(t => $('#t-'+t).hidden = (t!==TAB));
+  ['arch','docs','policy','run','approvals','audit'].forEach(t => $('#t-'+t).hidden = (t!==TAB));
   render();
 });
 
 function render() {
   if (!S) return;
+  if (TAB === 'arch') renderArch();
   if (TAB === 'docs') renderDocs();
   if (TAB === 'policy') renderPolicy();
   if (TAB === 'run') renderRun();
@@ -304,6 +437,7 @@ async function runCall() {
       prompt: $('#r-prompt').value, session: SESSION,
     });
     SESSION = r.session;
+    LAST = r;
     const cls = r.status === 'completed' ? 'allow' : (r.status === 'denied' ? 'deny' : 'restricted');
     $('#r-out').innerHTML = `
       <h3>result</h3>
@@ -463,6 +597,193 @@ async function loadAudit() {
          hash ${esc(e.entry_hash.slice(0,24))}…</p>
       <pre class="tiny">${esc(JSON.stringify(e.detail, null, 2))}</pre>`;
   });
+}
+
+// ------------------------------------------------------------ architecture
+const ARROW_DEFS = `<defs>
+  <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+          orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+</defs>`;
+
+function ladderSVG(decidedAt) {
+  const on = n => decidedAt === n ? ' class="hot"' : '';
+  const box = (x, y, w, h, t, sub, cls) => `
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7"
+          fill="none" stroke="currentColor" stroke-width="1.4"${cls || ''}/>
+    <text x="${x + w / 2}" y="${y + (sub ? 20 : h / 2 + 4)}" text-anchor="middle"
+          font-size="12.5" font-weight="600" fill="currentColor">${t}</text>
+    ${sub ? `<text x="${x + w / 2}" y="${y + 36}" text-anchor="middle" font-size="10.5"
+            fill="currentColor" opacity=".65">${sub}</text>` : ''}`;
+  const down = (y1, y2) => `<line x1="360" y1="${y1}" x2="360" y2="${y2}"
+      stroke="currentColor" stroke-width="1.4" marker-end="url(#ah)"/>`;
+  const toBus = y => `<line x1="230" y1="${y}" x2="192" y2="${y}"
+      stroke="currentColor" stroke-width="1.2" opacity=".75"/>`;
+
+  return `<svg viewBox="0 0 720 372" role="img" xmlns="http://www.w3.org/2000/svg"
+      aria-label="A request is tested against deny rules, then the routing gate, then allow rules, then a default deny. Three of the four gates converge on one logged denial to the left; the allow path exits right with obligations attached.">
+    ${ARROW_DEFS}
+    ${box(230, 6, 260, 46, 'request context', 'who · why · which documents · which model')}
+    ${down(52, 74)}
+    ${box(230, 76, 260, 48, '1 · deny rules, in file order', 'first match denies', on(1))}
+    ${down(124, 146)}
+    ${box(230, 148, 260, 48, '2 · routing gate', 'may this model receive this data?', on(2))}
+    ${down(196, 218)}
+    ${box(230, 220, 260, 48, '3 · allow rules, in file order', 'first match wins', on(3))}
+    ${down(268, 290)}
+    ${box(230, 292, 260, 48, '4 · default', 'nothing matched', on(4))}
+
+    ${toBus(100)}${toBus(172)}${toBus(316)}
+    <line x1="192" y1="100" x2="192" y2="316" stroke="currentColor" stroke-width="1.2" opacity=".75"/>
+    <line x1="192" y1="244" x2="174" y2="244" stroke="currentColor" stroke-width="1.4"
+          marker-end="url(#ah)"/>
+    ${box(20, 222, 150, 44, 'DENY', 'and the rule that fired')}
+    <text x="95" y="284" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".6">three of the four gates</text>
+    <text x="95" y="297" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".6">end here</text>
+
+    <line x1="490" y1="244" x2="526" y2="244" stroke="currentColor" stroke-width="1.4"
+          marker-end="url(#ah)"/>
+    ${box(530, 222, 170, 44, 'ALLOW', '+ obligations')}
+    <text x="615" y="284" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".6">never bare - see below</text>
+  </svg>`;
+}
+
+function obligationSVG() {
+  const box = (x, y, w, h, t, sub) => `
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="none"
+          stroke="currentColor" stroke-width="1.4"/>
+    <text x="${x + w / 2}" y="${y + 22}" text-anchor="middle" font-size="12.5"
+          font-weight="600" fill="currentColor">${t}</text>
+    ${sub ? `<text x="${x + w / 2}" y="${y + 38}" text-anchor="middle" font-size="10.5"
+            fill="currentColor" opacity=".65">${sub}</text>` : ''}`;
+  return `<svg viewBox="0 0 720 250" role="img" xmlns="http://www.w3.org/2000/svg"
+      aria-label="An allow is not permission on its own. Its obligations are discharged in a fixed order, and if any one cannot be met the allow is converted into a logged denial instead of proceeding.">
+    ${ARROW_DEFS}
+    ${box(10, 92, 130, 48, 'ALLOW', 'from rule N')}
+    <line x1="140" y1="116" x2="186" y2="116" stroke="currentColor" stroke-width="1.4"
+          marker-end="url(#ah)"/>
+    <rect x="190" y="40" width="270" height="164" rx="7" fill="none" stroke="currentColor"
+          stroke-width="1.4"/>
+    <text x="325" y="60" text-anchor="middle" font-size="12.5" font-weight="600"
+          fill="currentColor">discharge, in this order</text>
+    ${['audit · what the log must capture',
+       'residency · where inference may run',
+       'approve · block for a human',
+       'redact · tokenize, mask or drop',
+       'minimum_necessary · drop sections',
+       'retain · start the clocks',
+       'worm · mark write-once',
+       'supervise · queue for review'].map((t, i) =>
+      `<text x="206" y="${80 + i * 15}" font-size="10" fill="currentColor"
+             opacity=".8">${t}</text>`).join('')}
+    <line x1="460" y1="80" x2="541" y2="80" stroke="currentColor" stroke-width="1.4"
+          marker-end="url(#ah)"/>
+    <text x="500" y="71" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".7">all met</text>
+    ${box(545, 58, 172, 44, 'the model call', 'audited in full')}
+    <line x1="460" y1="170" x2="541" y2="170" stroke="currentColor" stroke-width="1.4"
+          marker-end="url(#ah)" stroke-dasharray="4 3"/>
+    <text x="500" y="161" text-anchor="middle" font-size="9.5" fill="currentColor"
+          opacity=".7">any one fails</text>
+    ${box(545, 148, 172, 44, 'DENY', 'logged as obligation_failure')}
+  </svg>`;
+}
+
+async function renderArch() {
+  const p = await api('/api/pack/' + S.active_pack);
+  const denies = p.rules.filter(r => r.decision === 'deny');
+  const allows = p.rules.filter(r => r.decision === 'allow');
+  const restricted = p.routing.restricted || {};
+
+  let decidedAt = null, lastLine = '';
+  if (LAST) {
+    const rid = LAST.rule_id || '';
+    if (rid === 'DEFAULT-DENY') decidedAt = 4;
+    else if (rid.startsWith('ROUTING:')) decidedAt = 2;
+    else if (denies.some(r => r.id === rid)) decidedAt = 1;
+    else if (allows.some(r => r.id === rid)) decidedAt = 3;
+    const cls = LAST.status === 'completed' ? 'allow' : (LAST.status === 'denied' ? 'deny' : 'restricted');
+    lastLine = `<p class="tiny">Your last call took the highlighted path:
+      <span class="chip ${cls}">${esc(LAST.status)}</span> at
+      <b class="mono">${esc(rid)}</b>.</p>`;
+  }
+
+  const stage = (n, title, body) => `
+    <div class="rule ${decidedAt === n ? 'allowr' : ''}">
+      <div><b>${n} · ${esc(title)}</b>${decidedAt === n
+        ? ' <span class="chip restricted">this is where your last call was decided</span>' : ''}</div>
+      <div class="tiny" style="margin-top:5px">${body}</div>
+    </div>`;
+
+  $('#t-arch').innerHTML = `<div class="panel">
+    <h2>How a decision gets made</h2>
+    <p class="tiny muted">Everything below is read from the pack that is loaded right now
+      (<b class="mono">${esc(p.id)}@${esc(p.version)}</b>). Switch packs in the header and
+      this page changes with it - that is the claim the whole design rests on.</p>
+
+    <figure>
+      ${ladderSVG(decidedAt)}
+      <figcaption class="tiny muted">Four gates, evaluated in this order every time. There is
+        no priority arithmetic and no most-specific-match rule to explain: deny rules get the
+        first word, the routing gate is a hard floor beneath every allow, and anything that
+        reaches the bottom without matching is denied.</figcaption>
+    </figure>
+    ${lastLine}
+
+    ${stage(1, 'Deny rules run first', `
+      Written to be unconditional, so they cannot be talked past by a later rule.
+      ${denies.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
+        ${esc(r.description)} <span class="cite">${esc(r.citation)}</span></div>`).join('')}`)}
+
+    ${stage(2, 'Then the routing gate', `
+      Sourced from <code>routing.yaml</code>. The pack states what a model must <i>be</i>;
+      <code>config/models.yaml</code> states what each model <i>is</i>. Data classified
+      <b>restricted</b> under this pack requires:
+      ${Object.keys(restricted).length
+        ? `<code>${esc(JSON.stringify(restricted))}</code>`
+        : '<i>no constraint</i>'}.
+      This is why a model can hold a BAA and still be refused - a US-only rule rejects an
+      endpoint that may run inference in the EU.`)}
+
+    ${stage(3, 'Then allow rules, first match wins', `
+      An allow is never bare: it carries obligations, and the pack's
+      <code>always</code> block (${esc(p.always.join(', ')) || 'none'}) is merged into every one.
+      ${allows.map(r => `<div style="margin:4px 0"><code>${esc(r.id)}</code>
+        ${esc(r.description)}</div>`).join('')}`)}
+
+    ${stage(4, 'Otherwise, deny', `
+      <i>${esc(p.rules.length ? (S.packs.find(x => x.id === p.id) ? '' : '') : '')}</i>
+      Nothing matched, so nothing is permitted. A pack cannot opt out of this - a
+      <code>rules.yaml</code> declaring <code>default: allow</code> fails to load.`)}
+
+    <h2>An allow is not yet permission</h2>
+    <figure>
+      ${obligationSVG()}
+      <figcaption class="tiny muted">The decision is binary; everything else a regime demands
+        rides along as an obligation. The gateway must discharge all of them, in the order
+        shown, before a single byte leaves the machine.</figcaption>
+    </figure>
+    <p class="tiny">The ordering carries real constraints. <code>approve</code> blocks early,
+      so no work is done on data that may never be released. <code>redact</code> must precede
+      <code>minimum_necessary</code>, because detection spans are offsets into the document as
+      classified and removing a section invalidates them - the gateway checks this and fails
+      closed rather than redacting the wrong bytes.</p>
+    <p class="tiny"><b>An allow whose obligations cannot all be met is a deny</b>, recorded as
+      one. That single property is what makes the rest of this trustworthy: there is no path
+      where policy said yes, the condition was skipped, and the call went out anyway.</p>
+
+    <h2>Why the log can be believed</h2>
+    <p class="tiny">Every model call in the system goes through one function, so the audit log
+      is complete rather than best-effort. Each entry's hash covers its own contents
+      <i>and</i> the previous entry's hash, so altering any entry breaks every hash after it -
+      try it yourself on the Audit log tab.</p>
+    <p class="tiny muted">What that does not protect is the newest entry: nothing commits to it
+      yet, so it can be rewritten and rehashed cleanly. Closing that gap means anchoring the
+      head hash somewhere the operator does not control. Worth saying out loud before someone
+      in the room asks.</p>
+  </div>`;
 }
 
 // ------------------------------------------------------------------- init
