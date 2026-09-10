@@ -1,0 +1,58 @@
+# STUB. Keyword heuristics stand in for a restricted-list feed. They will
+# over-trigger on ordinary market commentary; that is the honest failure mode
+# for a stub and the reason the llm identifier exists alongside them.
+data_types:
+
+  MNPI:
+    description: Material non-public information
+    citation: "SEA Rule 10b5-1"
+    identifiers:
+      - id: explicit_marker
+        method: regex
+        pattern: '\b(?i:material\s+non[-\s]?public|MNPI|not\s+yet\s+public|before\s+(?:the\s+)?announcement|pre[-\s]?announcement|inside\s+information|wall[-\s]?crossed)\b'
+        token_entity: MNPI
+        confidence: 0.9
+      - id: deal_terms
+        method: regex
+        pattern: '\b(?i:tender\s+offer|tender\s+is|merger\s+agreement|definitive\s+agreement|LOI\s+signed|mandate\s+signed|takeover\s+premium)\b'
+        token_entity: DEAL
+        confidence: 0.75
+      - id: unreleased_financials
+        method: regex
+        pattern: '\b(?i:(?:Q[1-4]|quarterly|preliminary)\s+(?:numbers|results|earnings)[^.\n]{0,40}(?:not\s+public|under\s+consensus|before\s+release|unreleased))\b'
+        token_entity: FINANCIALS
+        confidence: 0.8
+      - id: concealment_language
+        method: regex
+        pattern: '\b(?i:do\s+not\s+put\s+(?:that|this)\s+in\s+writing|delete\s+this|keep\s+it\s+(?:here|off\s+the\s+record)|not\s+on\s+(?:chat|email))\b'
+        token_entity: CONCEAL
+        confidence: 0.85
+      - id: undisclosed_material_fact
+        method: llm
+        hint: >-
+          A specific, unreleased fact a reasonable investor would consider
+          important - deal price, timing, unreleased results, a regulatory
+          action - discussed as though it is not yet public.
+
+  PII:
+    description: Personally identifiable information
+    identifiers:
+      - id: ssn
+        method: regex
+        pattern: '\b\d{3}-\d{2}-\d{4}\b'
+        token_entity: SSN
+        confidence: 0.98
+      - id: email
+        method: regex
+        pattern: '\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'
+        token_entity: EMAIL
+        confidence: 0.95
+
+  PCI:
+    description: Payment card data
+    identifiers:
+      - id: pan
+        method: regex
+        pattern: '\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6011)[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'
+        token_entity: CARD
+        confidence: 0.95

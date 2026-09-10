@@ -1,0 +1,71 @@
+version: 1
+default: deny
+default_reason: >-
+  No rule in the pubsec pack permits this. This pack is a stub: it denies
+  more than a complete one would, which is the correct direction for a stub
+  to be wrong in.
+
+always:
+  - audit: {level: full}
+  - residency: {allowed: [US]}
+
+rules:
+  - id: PS-001
+    description: Material under a limited-dissemination control does not leave the boundary.
+    when: {sensitivity: [prohibited]}
+    then: {decision: deny}
+    citation: "32 CFR 2002.20(b)"
+
+  - id: PS-002
+    description: CUI may not be processed outside US data residency.
+    when:
+      data_types: {any_of: [CUI]}
+      target.residency: {none_of: [US]}
+    then: {decision: deny}
+    citation: "NIST SP 800-171 Rev. 3 3.1.3"
+
+  - id: PS-005
+    description: The classification pass, governed like any other call.
+    when:
+      action: [classify]
+      target.zero_retention: true
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [CUI, PII], strategy: tokenize}
+        - retain: {prompt_days: 1095, output_days: 90}
+    citation: "NIST SP 800-53 AU-12"
+
+  - id: PS-010
+    description: CUI may be summarized by a US-resident, non-retaining model, redacted.
+    when:
+      sensitivity: [restricted]
+      action: [summarize, extract]
+      target.zero_retention: true
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [CUI, PII], strategy: tokenize}
+        - minimum_necessary: {profile: determination_review}
+        - retain: {prompt_days: 1095, output_days: 90}
+    citation: "NIST SP 800-53 AC-4, SC-7"
+
+  - id: PS-020
+    description: Release of CUI-derived output requires an authorized holder's review.
+    when:
+      data_types: {any_of: [CUI]}
+      action: [release, export]
+    then:
+      decision: allow
+      obligations:
+        - approve: {queue: cui-release, roles: [isso, authorizing_official]}
+        - retain: {output_days: 1095}
+    citation: "32 CFR 2002.16(a)(5)"
+
+  - id: PS-030
+    description: Non-restricted material carries no special handling.
+    when: {sensitivity: [internal, public]}
+    then:
+      decision: allow
+      obligations:
+        - retain: {prompt_days: 90, output_days: 90}

@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# STUB PACK. Runs end to end and shows the pluggability, but it is not a
+# complete supervision program.
+#
+# What a complete pack would add: a restricted-list / watch-list feed to test
+# names against rather than keyword heuristics, lexicon-based surveillance
+# with reviewer feedback, per-desk information barriers, trade-blotter
+# correlation, and real WORM storage rather than a flag on a row.
+# ---------------------------------------------------------------------------
+id: finserv
+name: Financial Services - MNPI and supervision (stub)
+version: 0.2.0
+schema_version: 1
+status: stub
+jurisdiction: US
+authority: "SEA Rule 17a-4; FINRA Rule 3110; SEA Section 10(b) / Rule 10b-5"
+
+audit:
+  required_fields: [actor, purpose, resource_ids, decision, rule_id, model_id, redaction]
+  citation: "17 CFR 240.17a-4(f) - electronic recordkeeping"
+  retain_days: 2190          # 6 years, first two in an accessible place
+
+retention:
+  default_output_days: 2190
+  default_prompt_days: 2190
+  worm: true                 # 17a-4(f)(2)(ii)(A) write-once, non-erasable
+
+classifier:
+  llm_pass: true
+  target: claude-opus-5-baa
+  version_tag: finserv-clf-0.2.0
+  max_chars: 12000

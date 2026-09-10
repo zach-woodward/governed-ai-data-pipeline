@@ -1,0 +1,109 @@
+# ---------------------------------------------------------------------------
+# The decision table. Deny by default; a decision is binary; everything else
+# a regime demands rides along as an obligation on an allow.
+#
+# The engine evaluates: deny rules in order -> routing gate -> allow rules in
+# order -> default deny.
+# ---------------------------------------------------------------------------
+version: 1
+default: deny
+default_reason: >-
+  No rule in the HIPAA pack permits this combination of data, action, purpose
+  and model. Policy packs are deny-by-default.
+
+# Unioned into every allow. A rule-level obligation of the same type wins.
+always:
+  - audit: {level: full}
+
+rules:
+
+  # ------------------------------------------------------------ denials ---
+  - id: HIPAA-001
+    description: Prohibited data does not leave the boundary, on any routing.
+    when:
+      sensitivity: [prohibited]
+    then:
+      decision: deny
+    citation: "42 CFR 2.31; 45 CFR 164.502(a)"
+
+  - id: HIPAA-002
+    description: >-
+      PHI may only be disclosed to a processor operating under a business
+      associate agreement.
+    when:
+      sensitivity: [restricted]
+      data_types: {any_of: [PHI]}
+      target.baa: false
+    then:
+      decision: deny
+    citation: "45 CFR 164.308(b)(1), 164.502(e)"
+
+  - id: HIPAA-003
+    description: PHI may not be used for marketing without a valid authorization.
+    when:
+      data_types: {any_of: [PHI]}
+      subject.purpose_of_use: [marketing, fundraising, sale]
+    then:
+      decision: deny
+    citation: "45 CFR 164.508(a)(3)"
+
+  # ------------------------------------------------------------ allows ----
+  - id: HIPAA-005
+    description: >-
+      The classification pass is itself a governed model call. It runs on a
+      pattern-redacted copy, against a covered model, and never on material
+      the pattern pass already flagged prohibited (HIPAA-001 fires first).
+    when:
+      action: [classify]
+      target.baa: true
+      target.zero_retention: true
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [PHI, SUD, PCI], strategy: tokenize}
+        - retain: {prompt_days: 2190, output_days: 30}
+    citation: "45 CFR 164.502(b) - minimum necessary applies to the classifier too"
+
+  - id: HIPAA-010
+    description: >-
+      De-identified PHI may be summarized or extracted from by a covered
+      model, limited to the minimum necessary for the stated purpose.
+    when:
+      sensitivity: [restricted]
+      data_types: {any_of: [PHI]}
+      action: [summarize, extract]
+      target.baa: true
+      target.zero_retention: true
+      subject.purpose_of_use: [treatment, payment, operations, quality_improvement]
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [PHI, PCI], strategy: tokenize}
+        - minimum_necessary: {profile: clinical_summary}
+        - retain: {prompt_days: 2190, output_days: 30}
+        - residency: {allowed: [US]}
+    citation: "45 CFR 164.502(b), 164.514(d)"
+
+  - id: HIPAA-020
+    description: >-
+      Releasing PHI-derived output beyond the boundary is a disclosure and
+      requires a human accountable for it.
+    when:
+      data_types: {any_of: [PHI]}
+      action: [release, export]
+    then:
+      decision: allow
+      obligations:
+        - approve: {queue: phi-release, roles: [privacy_officer]}
+        - retain: {output_days: 2190}
+    citation: "45 CFR 164.508, 164.528 - accounting of disclosures"
+
+  - id: HIPAA-030
+    description: Non-restricted material carries no special handling.
+    when:
+      sensitivity: [internal, public]
+    then:
+      decision: allow
+      obligations:
+        - retain: {prompt_days: 90, output_days: 90}
+    citation: "45 CFR 164.502 - no PHI implicated"

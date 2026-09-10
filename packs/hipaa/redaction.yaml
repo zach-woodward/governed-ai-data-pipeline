@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------------------
+# What happens to each detected entity when a policy obligation says redact.
+#
+#   tokenize -> replaced with a stable placeholder, value stored in the local
+#               vault, re-identifiable only inside the boundary
+#   mask     -> partially obscured in place, not recoverable
+#   hash     -> replaced by a truncated digest, not recoverable
+#   drop     -> removed entirely, never written to the vault
+#
+# Longest key wins: "PHI.ssn" overrides "PHI".
+# ---------------------------------------------------------------------------
+strategies:
+  PHI:
+    default: tokenize
+    token_format: "[{ENTITY}_{N}]"
+    reversible: true
+    vault: local
+    scope: per_document        # numbering restarts per document
+
+  # Identifiers that are never worth the round trip. Under minimum necessary
+  # there is no summarization task that needs a social security number, so it
+  # is removed rather than tokenized - nothing to re-identify, nothing to leak
+  # from the vault.
+  PHI.ssn:        {default: drop, reversible: false}
+  PHI.biometric:  {default: drop, reversible: false}
+  PHI.photo:      {default: drop, reversible: false}
+
+  # Part 2 material never reaches redaction in practice - it classifies as
+  # prohibited and is denied before any call. This entry exists so that a
+  # pack author who relaxes the classification rule still gets safe handling.
+  SUD:
+    default: drop
+    reversible: false
+
+  PCI:
+    default: mask
+    mask_char: "x"
+    keep_last: 4
+    reversible: false
+
+minimum_necessary:
+  # 45 CFR 164.502(b): disclose only the minimum necessary for the purpose.
+  # A profile names what a task is allowed to see; the gateway drops the rest
+  # before the prompt is built.
+  profiles:
+    clinical_summary:
+      description: "Summarize a clinical course without identifying the patient."
+      keep_identifiers: []
+      keep_sections: [diagnosis, medications, vitals, procedures, plan, assessment]
+      drop_sections: [demographics, billing, insurance, contact, guarantor, employer, care team]
+    coding_review:
+      description: "Assign billing codes. Needs procedures and diagnoses only."
+      keep_identifiers: []
+      keep_sections: [diagnosis, procedures]
+      drop_sections: [demographics, billing, insurance, contact, guarantor, employer, care team, plan, vitals]

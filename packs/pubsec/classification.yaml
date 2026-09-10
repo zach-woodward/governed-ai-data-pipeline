@@ -1,0 +1,19 @@
+levels: [public, internal, restricted, prohibited]
+default: internal
+rules:
+  - id: PS-CLS-DISSEM
+    if: {identifiers: {any_of: [dissemination_control]}}
+    level: prohibited
+    reason: >-
+      A limited-dissemination control (NOFORN, FED ONLY) is present. A stub
+      pack cannot evaluate whether a given model endpoint satisfies it, so it
+      refuses rather than guesses.
+    citation: "32 CFR 2002.20(b)"
+  - id: PS-CLS-CUI
+    if: {data_types: {any_of: [CUI]}}
+    level: restricted
+    citation: "32 CFR 2002.14"
+  - id: PS-CLS-PII
+    if: {data_types: {any_of: [PII]}, identifiers: {count: {gte: 2}}}
+    level: restricted
+    citation: "NIST SP 800-122"

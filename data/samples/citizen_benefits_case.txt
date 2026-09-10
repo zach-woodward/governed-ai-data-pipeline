@@ -1,0 +1,17 @@
+SYNTHETIC RECORD - NOT REAL DATA - GENERATED FOR DEMONSTRATION ONLY
+Department of Community Services (fictional) | Case File
+
+CONTROLLED UNCLASSIFIED INFORMATION - CUI//SP-PRVCY
+Distribution limited to authorized personnel. Handle per NIST SP 800-171.
+
+CASE DEMOGRAPHICS:
+Claimant: Ruth Okonjo-Bell
+Case Number: CS-2026-0044817
+SSN: 388-42-1177
+Address: 44 Halloway Road
+City/State/ZIP: Brightmoor, OH 44113
+Phone: (216) 555-0133
+
+DETERMINATION:
+Eligibility continued through the next review period. Income verification
+received and reconciled against the quarterly wage file.

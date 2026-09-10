@@ -1,0 +1,53 @@
+# ---------------------------------------------------------------------------
+# The model inventory. These are facts about the deployment, not about any
+# compliance regime, so they live here and not in a policy pack. A pack states
+# what a model must be (routing.yaml); this file states what each model is.
+#
+# In a real deployment these attributes would be sourced from contract
+# metadata, not hand-maintained - the point of the file is that the values are
+# auditable and separate from the rules that read them.
+# ---------------------------------------------------------------------------
+default_target: claude-opus-5-baa
+
+models:
+  claude-opus-5-baa:
+    model_id: claude-opus-5
+    provider: anthropic
+    display: "Claude Opus 5 - covered endpoint (BAA, zero retention)"
+    baa: true
+    zero_retention: true
+    residency: [US]
+    notes: >-
+      Stands in for an Anthropic deployment under a signed business associate
+      agreement with zero data retention. The demo does not verify the
+      contract; it demonstrates that the pipeline refuses to proceed without
+      one being asserted here.
+
+  claude-opus-5-standard:
+    model_id: claude-opus-5
+    provider: anthropic
+    display: "Claude Opus 5 - standard commercial terms (no BAA)"
+    baa: false
+    zero_retention: false
+    residency: [US]
+
+  claude-opus-5-global:
+    model_id: claude-opus-5
+    provider: anthropic
+    display: "Claude Opus 5 - covered, multi-region inference"
+    baa: true
+    zero_retention: true
+    residency: [US, EU]
+    notes: "Fails a US-residency requirement even though it is BAA-covered."
+
+  local-echo:
+    model_id: local-echo
+    provider: local
+    display: "Local deterministic stub - no network egress"
+    baa: true
+    zero_retention: true
+    residency: [US]
+    offline: true
+    notes: >-
+      Lets the whole pipeline, including the audit trail, run with no API key
+      and no data leaving the machine. Governance behavior is identical.

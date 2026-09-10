@@ -1,0 +1,15 @@
+SYNTHETIC RECORD - NOT REAL DATA - GENERATED FOR DEMONSTRATION ONLY
+Meridian Valley Health (fictional) | Telephone Encounter
+
+PATIENT DEMOGRAPHICS:
+Patient: Theodore Blackmere
+MRN: 5518803
+DOB: 11/02/1978
+
+ASSESSMENT:
+Caller reports three days of right lower quadrant pain, worse with movement,
+low-grade fever to 100.8F. No prior abdominal surgery. Advised to present to
+emergency department for evaluation of possible appendicitis.
+
+PLAN:
+Warm handoff to ED triage. Chart flagged for follow-up in 24 hours.

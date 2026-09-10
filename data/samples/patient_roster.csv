@@ -1,0 +1,4 @@
+record_note,patient_name,mrn,dob,phone,visit_date,diagnosis
+SYNTHETIC - NOT REAL DATA,Dolores Ashgrove,4471982,03/14/1952,802-555-0147,04/02/2026,HFpEF
+SYNTHETIC - NOT REAL DATA,Theodore Blackmere,5518803,11/02/1978,802-555-0163,04/03/2026,Abdominal pain
+SYNTHETIC - NOT REAL DATA,Rosalind Vetch,6602947,09/18/1966,802-555-0175,04/03/2026,Type 2 diabetes

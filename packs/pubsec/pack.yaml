@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# STUB PACK. Enough to run end to end and to show that swapping the pack
+# changes classification, redaction, routing and audit without touching
+# pipeline code. It is not a complete CUI program.
+#
+# What a complete pack would add: the full CUI Registry category list and
+# their individual limited-dissemination controls, decontrol rules, marking
+# validation (banner vs. portion marks), and a real control-implementation
+# statement per NIST SP 800-53 control rather than the mapping stub below.
+# ---------------------------------------------------------------------------
+id: pubsec
+name: Public Sector - CUI handling (stub)
+version: 0.2.0
+schema_version: 1
+status: stub
+jurisdiction: US
+authority: "32 CFR Part 2002; NIST SP 800-171 Rev. 3; NIST SP 800-53 Rev. 5"
+
+audit:
+  required_fields: [actor, purpose, resource_ids, decision, rule_id, model_id, redaction]
+  citation: "NIST SP 800-53 AU-2, AU-3, AU-12"
+  retain_days: 1095
+
+retention:
+  default_output_days: 90
+  default_prompt_days: 1095
+  worm: false
+
+classifier:
+  llm_pass: true
+  target: claude-opus-5-baa
+  version_tag: pubsec-clf-0.2.0
+  max_chars: 12000
+
+# Control mapping stub. The core does not read this; it exists so that an
+# assessor can trace a pipeline behavior to the control it is claimed to
+# satisfy, and so that the gap between "we log things" and "we satisfy AU-12"
+# is visible rather than assumed.
+nist_800_53:
+  AC-4:  {name: Information Flow Enforcement, implemented_by: "policy/engine.py routing gate", status: partial}
+  AU-2:  {name: Event Logging, implemented_by: "audit.py append", status: partial}
+  AU-3:  {name: Content of Audit Records, implemented_by: "pack.audit.required_fields", status: partial}
+  AU-9:  {name: Protection of Audit Information, implemented_by: "audit.py hash chain + append-only triggers", status: partial}
+  AU-12: {name: Audit Record Generation, implemented_by: "gateway.py choke point", status: partial}
+  MP-6:  {name: Media Sanitization, implemented_by: "retention.py sweep", status: stub}
+  SC-7:  {name: Boundary Protection, implemented_by: "redact.py vault stays local", status: stub}
+  SI-12: {name: Information Management and Retention, implemented_by: "retention.py", status: partial}

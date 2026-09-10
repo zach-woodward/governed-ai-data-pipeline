@@ -1,0 +1,10 @@
+# Residency is the control that matters most here: CUI carries data-location
+# obligations that a commercial multi-region endpoint cannot satisfy.
+requirements:
+  prohibited:
+    allow: false
+  restricted:
+    zero_retention: true
+    residency: [US]
+  internal: {}
+  public: {}

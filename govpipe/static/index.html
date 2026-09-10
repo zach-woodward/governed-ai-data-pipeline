@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Governed AI Data Pipeline</title>
+<style>
+:root{
+  --bg:#f7f7f5; --panel:#fff; --ink:#1a1a19; --dim:#6b6b66; --line:#e2e2dd;
+  --accent:#2f5d50; --allow:#1f6f43; --allow-bg:#e6f4ec; --deny:#a32b1f;
+  --deny-bg:#fbeae8; --warn:#8a5a00; --warn-bg:#fdf3e0; --code:#f2f2ee;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#141513; --panel:#1c1e1b; --ink:#ecebe6; --dim:#9a9a92; --line:#2e312c;
+  --accent:#7fbfa8; --allow:#6fd39a; --allow-bg:#16301f; --deny:#f08a7d;
+  --deny-bg:#331815; --warn:#e0b45f; --warn-bg:#2e2411; --code:#232520;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif}
+code,pre,.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+h1{font-size:19px;margin:0 0 3px}
+h2{font-size:15px;margin:24px 0 10px}
+h3{font-size:13px;margin:16px 0 6px;color:var(--dim);text-transform:uppercase;
+   letter-spacing:.06em}
+.sub{color:var(--dim);font-size:13px;margin:0}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:7px;
+  padding:5px 10px;font-size:12px}
+.stat b{font-variant-numeric:tabular-nums}
+button,select,input,textarea{font:inherit;color:inherit;background:var(--panel);
+  border:1px solid var(--line);border-radius:7px;padding:6px 10px}
+button{cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+button.primary:hover{filter:brightness(1.1)}
+button:disabled{opacity:.5;cursor:default}
+nav{display:flex;flex-wrap:wrap;gap:4px;margin:16px 0 4px;border-bottom:1px solid var(--line)}
+nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;
+  padding:8px 12px;color:var(--dim)}
+nav button[aria-current=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+   color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--code)}
+.scroll{overflow-x:auto}
+.chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11px;
+  font-weight:600;white-space:nowrap}
+.public,.internal{background:var(--code);color:var(--dim)}
+.restricted{background:var(--warn-bg);color:var(--warn)}
+.prohibited,.deny{background:var(--deny-bg);color:var(--deny)}
+.allow{background:var(--allow-bg);color:var(--allow)}
+pre{background:var(--code);border:1px solid var(--line);border-radius:7px;
+  padding:11px;overflow-x:auto;font-size:12px;margin:6px 0;white-space:pre-wrap;
+  word-break:break-word}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--dim);margin-bottom:4px}
+.field{margin-bottom:10px}
+.field input,.field select,.field textarea{width:100%}
+.cite{color:var(--dim);font-size:12px}
+.rule{border-left:3px solid var(--line);padding:8px 0 8px 12px;margin:10px 0}
+.rule.allowr{border-left-color:var(--allow)}
+.rule.denyr{border-left-color:var(--deny)}
+.muted{color:var(--dim)}
+.banner{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor;
+  border-radius:8px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;font-weight:600}
+.tiny{font-size:11.5px}
+ul.plain{margin:4px 0;padding-left:18px}
+.flex{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">Synthetic data only. Every document here is fabricated for demonstration; none of it describes a real person.</div>
+
+<header>
+  <h1>Governed AI Data Pipeline</h1>
+  <p class="sub">LLM workloads over regulated data, with controls that are enforced rather than asserted.</p>
+  <div class="bar">
+    <span class="stat">pack
+      <select id="packsel" style="padding:2px 6px;margin-left:4px"></select>
+    </span>
+    <span class="stat" id="chain">chain …</span>
+    <span class="stat">audit <b id="c-audit">0</b></span>
+    <span class="stat">denials <b id="c-deny">0</b></span>
+    <span class="stat">vault tokens <b id="c-vault">0</b></span>
+    <button id="ingest">Ingest samples</button>
+  </div>
+</header>
+
+<nav>
+  <button data-tab="docs" aria-current="true">Documents</button>
+  <button data-tab="policy">Policy pack</button>
+  <button data-tab="run">Run a call</button>
+  <button data-tab="approvals">Approvals</button>
+  <button data-tab="audit">Audit log</button>
+</nav>
+
+<section id="t-docs"></section>
+<section id="t-policy" hidden></section>
+<section id="t-run" hidden></section>
+<section id="t-approvals" hidden></section>
+<section id="t-audit" hidden></section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const chip = v => `<span class="chip ${esc(v)}">${esc(v)}</span>`;
+let S = null, SESSION = null;
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  } : {cache:'no-store'});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+async function refresh() {
+  S = await api('/api/state');
+  $('#c-audit').textContent = S.counts.audit;
+  $('#c-deny').textContent = S.counts.denials;
+  $('#c-vault').textContent = S.counts.vault;
+  const c = $('#chain');
+  c.innerHTML = S.chain.ok
+    ? `chain <span class="chip allow">intact</span>`
+    : `chain <span class="chip deny">broken at ${S.chain.broken_at}</span>`;
+  $('#packsel').innerHTML = S.packs.map(p =>
+    `<option value="${p.id}" ${p.id===S.active_pack?'selected':''}>${esc(p.id)}@${esc(p.version)}${p.status==='stub'?' (stub)':''}</option>`).join('');
+  render();
+}
+
+// ------------------------------------------------------------------ tabs
+let TAB = 'docs';
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  TAB = b.dataset.tab;
+  document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-current', x===b));
+  ['docs','policy','run','approvals','audit'].forEach(t => $('#t-'+t).hidden = (t!==TAB));
+  render();
+});
+
+function render() {
+  if (!S) return;
+  if (TAB === 'docs') renderDocs();
+  if (TAB === 'policy') renderPolicy();
+  if (TAB === 'run') renderRun();
+  if (TAB === 'approvals') renderApprovals();
+  if (TAB === 'audit') renderAudit();
+}
+
+// ------------------------------------------------------------- documents
+function renderDocs() {
+  if (!S.docs.length) {
+    $('#t-docs').innerHTML = `<div class="panel muted">Nothing ingested yet. Press <b>Ingest samples</b> above.</div>`;
+    return;
+  }
+  $('#t-docs').innerHTML = `<div class="panel"><div class="scroll"><table>
+    <tr><th>document</th><th>file</th><th>sensitivity</th><th>rule</th>
+        <th>types</th><th>found by</th><th>manifested under</th></tr>
+    ${S.docs.map((d,i) => `<tr class="clickable" data-i="${i}">
+      <td class="mono tiny">${esc(d.doc_id)}</td>
+      <td>${esc(d.file)}</td>
+      <td>${chip(d.sensitivity || 'internal')}</td>
+      <td class="mono tiny">${esc(d.classification_rule) || '\u2014'}</td>
+      <td class="tiny">${esc((d.data_types||[]).join(', ')) || '—'}</td>
+      <td class="tiny">${esc([...new Set(Object.values(d.methods||{}))].sort().join('+')) || '—'}</td>
+      <td class="mono tiny">${esc(d.pack_id)}@${esc(d.pack_version)}</td>
+    </tr>`).join('')}
+  </table></div><div id="docdetail"></div></div>`;
+  document.querySelectorAll('#t-docs tr.clickable').forEach(tr =>
+    tr.onclick = () => showDoc(S.docs[+tr.dataset.i]));
+}
+
+function showDoc(d) {
+  $('#docdetail').innerHTML = `
+    <h3>${esc(d.file)}</h3>
+    <div class="grid">
+      <div><label>sha256</label><span class="mono tiny">${esc(d.sha256)}</span></div>
+      <div><label>manifest hash</label><span class="mono tiny">${esc(d.manifest_hash)}</span></div>
+      <div><label>classifier</label><span class="mono tiny">${esc(d.classifier_version)}</span></div>
+      <div><label>ingested</label><span class="tiny">${esc((d.ingested_at||'').slice(0,19))}</span></div>
+    </div>
+    <h3>detections</h3>
+    <div class="scroll"><table>
+      <tr><th>type</th><th>identifier</th><th>found by</th><th>confidence</th><th>n</th></tr>
+      ${(d.detections||[]).map(x => `<tr><td>${esc(x.data_type)}</td>
+        <td class="mono tiny">${esc(x.identifier)}</td>
+        <td>${x.method === 'llm' ? '<span class="chip restricted">llm</span>' : '<span class="chip internal">regex</span>'}</td>
+        <td class="tiny">${x.confidence.toFixed(2)}</td><td>${x.n}</td></tr>`).join('')
+        || '<tr><td colspan="5" class="muted">no detections</td></tr>'}
+    </table></div>
+    <p class="tiny muted">Values are never stored in the clear here — the detections table keeps an HMAC of each value, keyed per database.</p>`;
+}
+
+// ----------------------------------------------------------------- policy
+async function renderPolicy() {
+  const p = await api('/api/pack/' + S.active_pack);
+  $('#t-policy').innerHTML = `<div class="panel">
+    <h2>${esc(p.name)} <span class="mono tiny muted">${esc(p.id)}@${esc(p.version)}</span>
+      ${p.status==='stub' ? '<span class="chip restricted">stub</span>' : ''}</h2>
+    <p class="cite">${esc(p.authority)}</p>
+    <h3>the six files</h3>
+    <div class="scroll"><table>${p.files.map(f =>
+      `<tr><td class="mono tiny">packs/${esc(p.id)}/${esc(f)}</td>
+       <td class="tiny muted">${esc(FILEDOC[f]||'')}</td></tr>`).join('')}</table></div>
+
+    <h3>routing requirements</h3>
+    <div class="scroll"><table>
+      <tr><th>sensitivity</th><th>a model must be…</th></tr>
+      ${Object.entries(p.routing).map(([k,v]) => `<tr><td>${chip(k)}</td>
+        <td class="mono tiny">${esc(JSON.stringify(v))==='{}' ? '— no constraint —' : esc(JSON.stringify(v))}</td></tr>`).join('')}
+    </table></div>
+
+    <h3>decision table &nbsp;<span class="tiny muted">deny by default · always: ${esc(p.always.join(', '))||'—'}</span></h3>
+    ${p.rules.map(r => `<div class="rule ${r.decision==='allow'?'allowr':'denyr'}">
+      <div>${chip(r.decision)} <b class="mono">${esc(r.id)}</b>
+        <span class="cite">${esc(r.citation)}</span></div>
+      <div class="tiny" style="margin:4px 0">${esc(r.description)}</div>
+      <div class="tiny mono muted">when ${esc(JSON.stringify(r.when))}</div>
+      ${r.obligations.length ? `<div class="tiny" style="margin-top:4px">obligations:
+        ${r.obligations.map(o=>`<code>${esc(o)}</code>`).join(' ')}</div>` : ''}
+    </div>`).join('')}
+
+    <h3>classification</h3>
+    <div class="scroll"><table>
+      <tr><th>rule</th><th>level</th><th>citation</th></tr>
+      ${p.classification.map(c => `<tr><td class="mono tiny">${esc(c.id||'?')}</td>
+        <td>${chip(c.level)}</td><td class="cite">${esc(c.citation||'')}</td></tr>`).join('')}
+      <tr><td class="mono tiny">CLS-DEFAULT</td><td>${chip(p.default_level)}</td><td class="cite">pack default</td></tr>
+    </table></div>
+
+    <h3>detectors</h3>
+    <div class="scroll"><table>
+      <tr><th>type</th><th>identifiers</th><th>found by</th></tr>
+      ${Object.entries(p.data_types).map(([dt,ids]) => `<tr><td><b>${esc(dt)}</b></td>
+        <td class="tiny mono">${ids.map(i=>esc(i.id)).join(', ')}</td>
+        <td class="tiny">${ids.filter(i=>i.method==='regex').length} regex,
+            ${ids.filter(i=>i.method==='llm').length} llm</td></tr>`).join('')}
+    </table></div>
+  </div>`;
+}
+const FILEDOC = {
+  'pack.yaml':'identity, audit requirements, retention defaults',
+  'detectors.yaml':'what data types exist and how to find them',
+  'classification.yaml':'detected types → sensitivity level',
+  'redaction.yaml':'what happens to each entity before a call',
+  'routing.yaml':'what a model must be to receive each level',
+  'rules.yaml':'the decision table, deny by default',
+};
+
+// -------------------------------------------------------------------- run
+function renderRun() {
+  const el = $('#t-run');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+  el.innerHTML = `<div class="panel">
+    <p class="tiny muted">Every call here goes through the same gateway the CLI uses. There is no path that skips the policy engine.</p>
+    <div class="grid">
+      <div class="field"><label>document</label><select id="r-doc"></select></div>
+      <div class="field"><label>action</label><select id="r-action">
+        <option>summarize</option><option>extract</option><option>release</option><option>export</option>
+      </select></div>
+      <div class="field"><label>purpose of use</label><select id="r-purpose">
+        <option>treatment</option><option>payment</option><option>operations</option>
+        <option>quality_improvement</option><option>supervision</option><option>research</option>
+        <option>marketing</option>
+      </select></div>
+      <div class="field"><label>roles</label><input id="r-roles" value="clinician"></div>
+      <div class="field"><label>acting as</label><input id="r-actor" value="dr.reyes"></div>
+      <div class="field"><label>model target</label><select id="r-target"></select></div>
+    </div>
+    <div class="field"><label>prompt</label>
+      <textarea id="r-prompt" rows="2">Summarize the clinical course and the plan.</textarea></div>
+    <div class="flex"><button class="primary" id="r-go">Send through the gateway</button>
+      <span class="tiny muted">Live targets cost money and leave the machine; the offline stub does neither.</span></div>
+    <div id="r-out"></div>
+  </div>`;
+  $('#r-go').onclick = runCall;
+  fillRun();
+}
+function fillRun() {
+  $('#r-doc').innerHTML = S.docs.map(d =>
+    `<option value="${d.doc_id}">${esc(d.file)} — ${esc(d.sensitivity||'?')}</option>`).join('');
+  $('#r-target').innerHTML = S.targets.map(t =>
+    `<option value="${t.key}" ${t.key==='local-echo'?'selected':''}>${esc(t.display)}</option>`)
+    .join('') + '<option value="none">— no model (release/export) —</option>';
+}
+async function runCall() {
+  const btn = $('#r-go'); btn.disabled = true; $('#r-out').innerHTML = '<p class="muted">…</p>';
+  try {
+    const r = await api('/api/ask', {
+      doc_ids: [$('#r-doc').value], action: $('#r-action').value,
+      purpose: $('#r-purpose').value, roles: $('#r-roles').value,
+      actor: $('#r-actor').value, target: $('#r-target').value,
+      prompt: $('#r-prompt').value, session: SESSION,
+    });
+    SESSION = r.session;
+    const cls = r.status === 'completed' ? 'allow' : (r.status === 'denied' ? 'deny' : 'restricted');
+    $('#r-out').innerHTML = `
+      <h3>result</h3>
+      <p><span class="chip ${cls}">${esc(r.status)}</span>
+         rule <b class="mono">${esc(r.rule_id)}</b>
+         <span class="muted tiny">· audit seq ${r.audit_seq}</span></p>
+      <p>${esc(r.reason)}</p>
+      ${r.citation ? `<p class="cite">${esc(r.citation)}</p>` : ''}
+      ${r.approval_id ? `<p>queued as <b class="mono">${esc(r.approval_id)}</b> — see the Approvals tab.</p>` : ''}
+      ${r.obligations.length ? `<h3>obligations discharged</h3><ul class="plain tiny">
+         ${r.obligations.map(o=>`<li><code>${esc(o)}</code></li>`).join('')}</ul>` : ''}
+      ${r.redaction && r.redaction.applied ? `<p class="tiny">redaction:
+         <code>${esc(JSON.stringify(r.redaction.strategies))}</code>,
+         ${r.redaction.tokens_issued} reversible token(s)</p>` : ''}
+      <h3>decision trace</h3><pre class="tiny">${esc(r.trace.join('\n'))}</pre>
+      ${r.prompt_sent ? `<h3>what actually crossed the boundary</h3><pre>${esc(r.prompt_sent)}</pre>` : ''}
+      ${r.text ? `<h3>response</h3><pre>${esc(r.text)}</pre>` : ''}
+      ${r.reidentified && r.reidentified !== r.text ?
+        `<h3>re-identified inside the boundary</h3><pre>${esc(r.reidentified)}</pre>` : ''}
+      <p class="tiny muted">tokens in/out: ${r.tokens_in ?? 0}/${r.tokens_out ?? 0}</p>`;
+    await refresh();
+  } catch (e) {
+    $('#r-out').innerHTML = `<p class="chip deny">error</p> <span class="tiny">${esc(e.message)}</span>`;
+  }
+  btn.disabled = false;
+}
+
+// -------------------------------------------------------------- approvals
+function renderApprovals() {
+  const items = S.approvals;
+  $('#t-approvals').innerHTML = `<div class="panel">
+    <p class="tiny muted">Policy names the queue and the roles. The queue enforces them — try approving as a clinician.</p>
+    ${items.length ? `<div class="scroll"><table>
+      <tr><th>id</th><th>status</th><th>queue</th><th>required role</th><th>requester</th><th>summary</th><th></th></tr>
+      ${items.map(a => `<tr>
+        <td class="mono tiny">${esc(a.approval_id)}</td>
+        <td>${chip(a.status==='approved'?'allow':(a.status==='denied'?'deny':'restricted'))}
+            <span class="tiny">${esc(a.status)}</span></td>
+        <td class="tiny">${esc(a.queue)}</td>
+        <td class="mono tiny">${esc((a.roles||[]).join(', '))}</td>
+        <td class="tiny">${esc(a.requester)}</td>
+        <td class="tiny">${esc(a.summary)}</td>
+        <td>${a.status==='pending' ? `<button data-id="${esc(a.approval_id)}" class="dec">decide</button>` : ''}</td>
+      </tr>`).join('')}
+    </table></div>` : '<p class="muted">Queue is empty. Run a <b>release</b> action to put something in it.</p>'}
+    <div id="decbox"></div></div>`;
+  document.querySelectorAll('button.dec').forEach(b => b.onclick = () => decideBox(b.dataset.id));
+}
+function decideBox(id) {
+  $('#decbox').innerHTML = `<h3>decide ${esc(id)}</h3>
+    <div class="grid">
+      <div class="field"><label>acting as</label><input id="d-actor" value="k.oyelaran"></div>
+      <div class="field"><label>roles held</label><input id="d-roles" value="privacy_officer"></div>
+      <div class="field"><label>note</label><input id="d-note" value="Minimum necessary confirmed."></div>
+    </div>
+    <div class="flex">
+      <button class="primary" id="d-ok">Approve</button>
+      <button id="d-no">Deny</button>
+    </div><div id="d-out"></div>`;
+  const go = async decision => {
+    try {
+      await api('/api/approvals', {approval_id:id, decision,
+        actor:$('#d-actor').value, roles:$('#d-roles').value, note:$('#d-note').value,
+        session:SESSION});
+      $('#d-out').innerHTML = `<p class="chip allow">recorded</p>`;
+      await refresh();
+    } catch (e) {
+      $('#d-out').innerHTML = `<p><span class="chip deny">refused</span>
+        <span class="tiny">${esc(e.message)}</span></p>
+        <p class="tiny muted">That refusal is itself in the audit log.</p>`;
+      await refresh();
+    }
+  };
+  $('#d-ok').onclick = () => go('approved');
+  $('#d-no').onclick = () => go('denied');
+}
+
+// ------------------------------------------------------------------ audit
+async function renderAudit() {
+  const el = $('#t-audit');
+  if (!el.dataset.built) {
+    el.dataset.built = '1';
+    el.innerHTML = `<div class="panel">
+      <div class="flex">
+        <div class="field" style="margin:0"><label>event</label>
+          <select id="a-event"><option value="">any</option><option>ingest</option>
+          <option>classify</option><option>llm_call</option><option>policy_deny</option>
+          <option>approval_requested</option><option>approval_decision</option>
+          <option>approval_refused</option><option>obligation_failure</option>
+          <option>action_completed</option><option>retention_sweep</option></select></div>
+        <div class="field" style="margin:0"><label>sensitivity</label>
+          <select id="a-sens"><option value="">any</option><option>internal</option>
+          <option>restricted</option><option>prohibited</option></select></div>
+        <div class="field" style="margin:0"><label>decision</label>
+          <select id="a-dec"><option value="">any</option><option>allow</option><option>deny</option></select></div>
+        <div class="field" style="margin:0"><label>since</label>
+          <select id="a-since"><option value="">all</option><option>1h</option><option>24h</option><option>7d</option></select></div>
+        <button id="a-go">Query</button>
+        <button id="a-verify">Verify chain</button>
+        <button id="a-tamper">Try to tamper with it</button>
+      </div>
+      <div id="a-msg"></div><div id="a-out"></div></div>`;
+    $('#a-go').onclick = loadAudit;
+    $('#a-verify').onclick = async () => {
+      const v = await api('/api/verify', {});
+      $('#a-msg').innerHTML = `<p>${v.ok ? '<span class="chip allow">chain intact</span>'
+        : `<span class="chip deny">chain broken at ${v.broken_at}</span>`}
+        <span class="tiny muted">${esc(v.message)}</span></p>`;
+    };
+    $('#a-tamper').onclick = async () => {
+      $('#a-msg').innerHTML = '<p class="muted">…</p>';
+      const t = await api('/api/tamper', {});
+      if (t.error) { $('#a-msg').innerHTML = `<p class="tiny muted">${esc(t.error)}</p>`; return; }
+      $('#a-msg').innerHTML = `<h3>attempting to rewrite audit entry ${t.target_seq}</h3>
+        <ol class="plain tiny">${t.steps.map(s => `<li style="margin:5px 0">
+          <b>${esc(s.step)}</b> —
+          ${s.blocked ? '<span class="chip deny">blocked</span>'
+            : (s.chain_ok ? '<span class="chip allow">chain intact</span>'
+                          : `<span class="chip deny">chain broken at ${s.broken_at}</span>`)}
+          <div class="muted">${esc(s.detail)}</div></li>`).join('')}</ol>
+        <p class="tiny muted">Every later entry commits to this one, so a single edit
+        means rewriting the whole tail. The database was restored automatically.</p>
+        <p class="tiny muted">${esc(t.note)}</p>`;
+      await refresh();
+    };
+  }
+  loadAudit();
+}
+async function loadAudit() {
+  const q = new URLSearchParams();
+  if ($('#a-event').value) q.set('event', $('#a-event').value);
+  if ($('#a-sens').value) q.set('sensitivity', $('#a-sens').value);
+  if ($('#a-dec').value) q.set('decision', $('#a-dec').value);
+  if ($('#a-since').value) q.set('since', $('#a-since').value);
+  q.set('limit', '120');
+  const {entries} = await api('/api/audit?' + q);
+  entries.reverse();   // newest first: the action you just took is at the top
+  $('#a-out').innerHTML = `<div class="scroll"><table>
+    <tr><th>seq</th><th>time</th><th>event</th><th>actor</th><th>docs</th><th>sens</th>
+        <th>decision</th><th>rule</th><th>model</th><th>tok</th><th>redact</th></tr>
+    ${entries.map(e => `<tr class="clickable" data-seq="${e.seq}">
+      <td class="mono">${e.seq}</td><td class="mono tiny">${esc((e.ts||'').slice(11,19))}</td>
+      <td class="tiny">${esc(e.event)}</td><td class="tiny">${esc(e.actor)}</td>
+      <td class="mono tiny">${esc((e.resource_ids||[]).join(','))||'—'}</td>
+      <td>${e.sensitivity ? chip(e.sensitivity) : '—'}</td>
+      <td>${e.decision ? chip(e.decision) : '—'}</td>
+      <td class="mono tiny">${esc(e.rule_id)||'—'}</td>
+      <td class="tiny">${esc(e.model_id)||'—'}</td>
+      <td class="tiny mono">${e.tokens_in||0}/${e.tokens_out||0}</td>
+      <td class="tiny">${e.redaction && e.redaction.applied ? 'yes' : 'no'}</td>
+    </tr>`).join('')}
+  </table></div><div id="a-detail"></div>`;
+  document.querySelectorAll('#a-out tr.clickable').forEach(tr => tr.onclick = async () => {
+    const e = await api('/api/audit/' + tr.dataset.seq);
+    $('#a-detail').innerHTML = `<h3>entry ${e.seq}</h3>
+      <p class="tiny mono muted">prev ${esc(e.prev_hash.slice(0,24))}…<br>
+         hash ${esc(e.entry_hash.slice(0,24))}…</p>
+      <pre class="tiny">${esc(JSON.stringify(e.detail, null, 2))}</pre>`;
+  });
+}
+
+// ------------------------------------------------------------------- init
+$('#ingest').onclick = async e => {
+  e.target.disabled = true; e.target.textContent = 'Ingesting…';
+  try { const r = await api('/api/ingest', {session: SESSION}); SESSION = r.session; }
+  finally { e.target.disabled = false; e.target.textContent = 'Ingest samples'; }
+  const el = $('#t-run'); el.dataset.built = ''; 
+  await refresh();
+};
+$('#packsel').onchange = async e => {
+  await api('/api/pack/use', {pack: e.target.value});
+  $('#t-run').dataset.built = '';
+  await refresh();
+};
+refresh();
+</script>
+</body>
+</html>

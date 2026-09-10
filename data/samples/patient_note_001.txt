@@ -1,0 +1,44 @@
+SYNTHETIC RECORD - NOT REAL DATA - GENERATED FOR DEMONSTRATION ONLY
+Meridian Valley Health (fictional) | Encounter Note
+
+PATIENT DEMOGRAPHICS:
+Patient: Dolores Ashgrove
+DOB: 03/14/1952
+Age: 91
+MRN: 4471982
+Address: 118 Wrenfield Terrace
+City/State/ZIP: Ashport, VT 05401
+Phone: (802) 555-0147
+Email: d.ashgrove@example.invalid
+SSN: 412-88-9931
+
+INSURANCE AND BILLING:
+Member ID: VTBC7741928
+Account No: 88410237
+Guarantor phone: (802) 555-0192
+Card on file: 4111 1111 1111 1111
+
+CARE TEAM:
+Physician: Marcus Fennimore
+NPI: 1487654321
+Fax: (802) 555-0188
+
+ASSESSMENT:
+91-year-old presenting with progressive exertional dyspnea over six weeks.
+Echo shows preserved ejection fraction with grade II diastolic dysfunction.
+Impression: HFpEF with volume overload, likely precipitated by dietary sodium.
+Secondary: stage 3a chronic kidney disease, stable.
+
+MEDICATIONS:
+Furosemide 40 mg PO daily
+Metoprolol succinate 25 mg PO daily
+Atorvastatin 20 mg PO nightly
+
+VITALS:
+BP 148/86, HR 78, SpO2 94% on room air, weight 71.2 kg (up 3.1 kg from prior)
+
+PLAN:
+Increase furosemide to 40 mg twice daily for five days, then reassess.
+Daily weights. Sodium under 2 g. Follow up in clinic in ten days.
+Remote monitor device serial: DEV-8842119X
+Portal: https://portal.meridianvalley.example.invalid/enc/44719

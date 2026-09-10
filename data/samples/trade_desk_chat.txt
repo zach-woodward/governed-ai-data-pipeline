@@ -1,0 +1,9 @@
+SYNTHETIC RECORD - NOT REAL DATA - GENERATED FOR DEMONSTRATION ONLY
+Northbrook Securities (fictional) | Desk Chat Export | Room: EQ-DESK-3
+
+09:14 j.moreau: anyone hear back on the Halverson Foods mandate
+09:14 p.singh: signed last night. announcement is queued for the 14th
+09:15 j.moreau: so the tender is 41 a share? that is well over where it trades
+09:15 p.singh: yes 41. do not put that in writing anywhere else
+09:16 j.moreau: understood. keeping it here
+09:22 p.singh: also the Q3 preliminary numbers came in under consensus, not public yet

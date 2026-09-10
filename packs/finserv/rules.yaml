@@ -1,0 +1,77 @@
+version: 1
+default: deny
+default_reason: >-
+  No rule in the finserv pack permits this. This pack is a stub and denies
+  more than a complete one would.
+
+always:
+  - audit: {level: full}
+  # 17a-4(f): records must be preserved write-once, non-erasable. Every output
+  # this pack produces inherits that, which is the single clearest example of
+  # a regime changing retention without touching pipeline code.
+  - worm: {}
+
+rules:
+  - id: FS-001
+    description: Communications showing recordkeeping evasion go to a human, not a model.
+    when: {sensitivity: [prohibited]}
+    then: {decision: deny}
+    citation: "FINRA Rule 3110(b)(4); SEA Rule 17a-4(b)(4)"
+
+  - id: FS-002
+    description: MNPI may not be used to inform trading or research decisions.
+    when:
+      data_types: {any_of: [MNPI]}
+      subject.purpose_of_use: [trading, research, investment_recommendation]
+    then: {decision: deny}
+    citation: "SEA Section 10(b), Rule 10b-5"
+
+  - id: FS-005
+    description: The classification pass, governed like any other call.
+    when:
+      action: [classify]
+      target.zero_retention: true
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [MNPI, PII, PCI], strategy: tokenize}
+        - retain: {prompt_days: 2190, output_days: 2190}
+    citation: "SEA Rule 17a-4(f)"
+
+  - id: FS-010
+    description: >-
+      Communications may be triaged for supervisory review. The output is
+      itself a supervisory record: retained six years, write-once, and copied
+      to the supervision queue.
+    when:
+      sensitivity: [restricted]
+      action: [summarize, extract, classify]
+      target.zero_retention: true
+      subject.purpose_of_use: [supervision, surveillance, compliance]
+    then:
+      decision: allow
+      obligations:
+        - redact: {types: [MNPI, PII, PCI], strategy: tokenize}
+        - minimum_necessary: {profile: surveillance_triage}
+        - retain: {prompt_days: 2190, output_days: 2190}
+        - supervise: {queue: desk-supervision}
+    citation: "FINRA Rule 3110(b)(4); SEA Rule 17a-4(f)"
+
+  - id: FS-020
+    description: Producing records outside the firm requires compliance sign-off.
+    when:
+      action: [release, export]
+    then:
+      decision: allow
+      obligations:
+        - approve: {queue: compliance-production, roles: [compliance_officer]}
+        - retain: {output_days: 2190}
+    citation: "SEA Rule 17a-4(j) - furnish records promptly to the Commission"
+
+  - id: FS-030
+    description: Non-restricted material carries no special handling beyond retention.
+    when: {sensitivity: [internal, public]}
+    then:
+      decision: allow
+      obligations:
+        - retain: {prompt_days: 2190, output_days: 2190}

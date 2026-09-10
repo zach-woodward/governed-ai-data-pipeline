@@ -1,0 +1,20 @@
+strategies:
+  CUI:
+    default: tokenize
+    token_format: "[{ENTITY}_{N}]"
+    reversible: true
+    vault: local
+    scope: per_document
+  PII:
+    default: tokenize
+    token_format: "[{ENTITY}_{N}]"
+    reversible: true
+    vault: local
+    scope: per_document
+  PII.ssn: {default: drop, reversible: false}
+minimum_necessary:
+  profiles:
+    determination_review:
+      description: "Review an eligibility determination without identifying the claimant."
+      keep_sections: [determination, findings, evidence]
+      drop_sections: [demographics, contact, banking]

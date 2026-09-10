@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------
+# Detected data types -> a sensitivity level. First matching rule wins, so
+# the strictest rules are listed first.
+# ---------------------------------------------------------------------------
+levels: [public, internal, restricted, prohibited]
+default: internal
+
+rules:
+  - id: CLS-P2
+    if: {data_types: {any_of: [SUD]}}
+    level: prohibited
+    reason: >-
+      42 CFR Part 2 records require patient consent naming the specific
+      recipient. This pipeline cannot obtain that consent, so Part 2 material
+      does not leave the boundary under any routing.
+    citation: "42 CFR 2.31"
+
+  - id: CLS-PHI-MULTI
+    if: {data_types: {any_of: [PHI]}, identifiers: {count: {gte: 2}}}
+    level: restricted
+    reason: >-
+      Two or more Safe Harbor identifiers alongside health information: the
+      record is identifiable and is treated as PHI.
+    citation: "45 CFR 164.514(b)(2)"
+
+  - id: CLS-PHI
+    if: {data_types: {any_of: [PHI]}}
+    level: restricted
+    reason: "Any protected health information is restricted by default."
+    citation: "45 CFR 164.502"
+
+  - id: CLS-PCI
+    if: {data_types: {any_of: [PCI]}}
+    level: restricted
+    reason: "Primary account numbers are restricted regardless of health context."
+    citation: "PCI DSS 3.3"

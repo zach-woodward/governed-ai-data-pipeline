@@ -1,0 +1,239 @@
+# ---------------------------------------------------------------------------
+# What data types exist under this regime, and how to find them.
+#
+# Note what is NOT here: there is no separate "PII" type. Under HIPAA,
+# individually identifiable information held by a covered entity in
+# connection with health care IS protected health information. Splitting off
+# a PII bucket would double-count the same spans and invite the wrong
+# handling decision. The pubsec and finserv packs do define PII, because
+# under those regimes it is a distinct category. This is the clearest single
+# example of why classification belongs to the pack and not to the core.
+#
+# Identifier ids follow 45 CFR 164.514(b)(2)(i)(A)-(R), the Safe Harbor list.
+# ---------------------------------------------------------------------------
+data_types:
+
+  PHI:
+    description: Protected Health Information
+    citation: "45 CFR 160.103"
+    identifiers:
+
+      - id: name                                    # (A)
+        method: regex
+        citation: "164.514(b)(2)(i)(A)"
+        pattern: '(?i:patient|member|subject|guardian|spouse|claimant)(?i:[\s_\-]*name)?\s*[::]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z''\-]+)+)'
+        group: 1
+        token_entity: PATIENT
+        confidence: 0.9
+
+      # Clinicians are individuals too. Tokenized separately so a reader of a
+      # redacted document can still tell patient from provider - which matters,
+      # because a summary that confuses the two is worse than useless.
+      - id: provider_name                           # (A)
+        method: regex
+        citation: "164.514(b)(2)(i)(A)"
+        pattern: '(?i:provider|physician|attending|clinician|nurse|therapist|referring)(?i:[\s_\-]*name)?\s*[::]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z''\-]+)+)'
+        group: 1
+        token_entity: PROVIDER
+        confidence: 0.9
+
+      # City plus state is a geographic subdivision smaller than a state.
+      - id: locality                                # (B)
+        method: regex
+        citation: "164.514(b)(2)(i)(B)"
+        pattern: '\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2})\b'
+        group: 1
+        token_entity: CITY
+        confidence: 0.75
+
+      - id: geographic                              # (B)
+        method: regex
+        citation: "164.514(b)(2)(i)(B)"
+        pattern: '\b\d{1,5}\s+[A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3}\s+(?i:Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Boulevard|Blvd|Court|Ct|Way|Place|Pl|Terrace|Ter)\b\.?'
+        token_entity: ADDRESS
+        confidence: 0.85
+
+      - id: postal_code                             # (B) - ZIP, anchored on a state code
+        method: regex
+        citation: "164.514(b)(2)(i)(B)"
+        pattern: '\b[A-Z]{2}\s+(\d{5}(?:-\d{4})?)\b'
+        group: 1
+        token_entity: ZIP
+        confidence: 0.85
+
+      - id: dates                                   # (C)
+        method: regex
+        citation: "164.514(b)(2)(i)(C)"
+        pattern: '(?i:DOB|Date[\s_\-]*of[\s_\-]*Birth|Birth[\s_\-]*Date|Admitted|Admission[\s_\-]*Date|Discharged|Discharge[\s_\-]*Date|Date[\s_\-]*of[\s_\-]*Death|DOD|Service[\s_\-]*Date|Visit[\s_\-]*Date)\s*[::]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})'
+        group: 1
+        token_entity: DATE
+        confidence: 0.9
+
+      - id: age_over_89                             # (C) - ages 90+ are identifiers
+        method: regex
+        citation: "164.514(b)(2)(i)(C)"
+        pattern: '\b(?i:age|aged)\s*[::]?\s*((?:9\d|1\d{2}))\b'
+        group: 1
+        token_entity: AGE
+        confidence: 0.9
+
+      # Same identifier, second shape: ages appear in prose as often as in a
+      # labelled field, and a summary that leaks "91-year-old" has leaked (C).
+      - id: age_over_89_prose                       # (C)
+        method: regex
+        citation: "164.514(b)(2)(i)(C)"
+        pattern: '\b((?:9\d|1\d{2}))[-\s]?year[-\s]?old\b'
+        group: 1
+        token_entity: AGE
+        confidence: 0.9
+
+      - id: phone                                   # (D)
+        method: regex
+        citation: "164.514(b)(2)(i)(D)"
+        pattern: '(?i:phone|tel|telephone|mobile|cell|contact)\s*[::]?\s*(\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+        group: 1
+        token_entity: PHONE
+        confidence: 0.9
+
+      - id: fax                                     # (E)
+        method: regex
+        citation: "164.514(b)(2)(i)(E)"
+        pattern: '(?i:fax|facsimile)\s*[::]?\s*(\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+        group: 1
+        token_entity: FAX
+        confidence: 0.9
+
+      - id: email                                   # (F)
+        method: regex
+        citation: "164.514(b)(2)(i)(F)"
+        pattern: '\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'
+        token_entity: EMAIL
+        confidence: 0.95
+
+      - id: ssn                                     # (G)
+        method: regex
+        citation: "164.514(b)(2)(i)(G)"
+        pattern: '\b\d{3}-\d{2}-\d{4}\b'
+        token_entity: SSN
+        confidence: 0.98
+
+      - id: mrn                                     # (H)
+        method: regex
+        citation: "164.514(b)(2)(i)(H)"
+        pattern: '\b(?i:MRN)\s*[#::]?\s*([A-Z]?\d{6,10})\b'
+        group: 1
+        token_entity: MRN
+        confidence: 0.95
+
+      - id: health_plan_id                          # (I)
+        method: regex
+        citation: "164.514(b)(2)(i)(I)"
+        pattern: '(?i:member\s*id|subscriber\s*id|policy\s*(?:no\.?|number|#)?|health\s*plan\s*id|beneficiary\s*(?:id)?)\s*[#::]?\s*([A-Z]{0,4}[0-9\-]{6,20})\b'
+        group: 1
+        token_entity: PLANID
+        confidence: 0.9
+
+      - id: account                                 # (J)
+        method: regex
+        citation: "164.514(b)(2)(i)(J)"
+        pattern: '(?i:account|acct)\s*(?i:no\.?|number|#)?\s*[::#]?\s*(\d{6,17})\b'
+        group: 1
+        token_entity: ACCOUNT
+        confidence: 0.9
+
+      - id: license                                 # (K)
+        method: regex
+        citation: "164.514(b)(2)(i)(K)"
+        pattern: '(?i:license|lic\.?|certificate|cert\.?|NPI|DEA)\s*(?i:no\.?|number|#)?\s*[::#]?\s*([A-Z]{0,2}[0-9]{6,12})\b'
+        group: 1
+        token_entity: LICENSE
+        confidence: 0.85
+
+      - id: vehicle                                 # (L)
+        method: regex
+        citation: "164.514(b)(2)(i)(L)"
+        pattern: '(?i:VIN|license\s*plate|plate)\s*[::#]?\s*([A-HJ-NPR-Z0-9]{5,17})\b'
+        group: 1
+        token_entity: VEHICLE
+        confidence: 0.85
+
+      - id: device                                  # (M)
+        method: regex
+        citation: "164.514(b)(2)(i)(M)"
+        pattern: '(?i:device\s*(?:id|serial)|serial\s*(?:no\.?|number|#)?|implant\s*id)\s*[::#]?\s*([A-Z0-9][A-Z0-9\-]{4,19})\b'
+        group: 1
+        token_entity: DEVICE
+        confidence: 0.85
+
+      - id: url                                     # (N)
+        method: regex
+        citation: "164.514(b)(2)(i)(N)"
+        pattern: '\b(?i:https?)://[^\s<>"'']+'
+        token_entity: URL
+        confidence: 0.9
+
+      - id: ip_address                              # (O)
+        method: regex
+        citation: "164.514(b)(2)(i)(O)"
+        pattern: '\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b'
+        token_entity: IP
+        confidence: 0.9
+
+      - id: biometric                               # (P)
+        method: regex
+        citation: "164.514(b)(2)(i)(P)"
+        pattern: '\b(?i:fingerprint|voice\s?print|retinal\s+scan|iris\s+scan|biometric\s+(?:id|identifier|template)|gait\s+signature)\b'
+        token_entity: BIOMETRIC
+        confidence: 0.8
+
+      - id: photo                                   # (Q)
+        method: regex
+        citation: "164.514(b)(2)(i)(Q)"
+        pattern: '\b(?i:full[-\s]face\s+phot\w+|facial\s+(?:image|photograph)|patient\s+phot\w+|clinical\s+phot\w+)\b'
+        token_entity: PHOTO
+        confidence: 0.8
+
+      - id: other_unique_code                       # (R)
+        method: llm
+        citation: "164.514(b)(2)(i)(R)"
+        hint: >-
+          Any other unique identifying number, characteristic or code tied to
+          one individual - study subject codes, internal case numbers, unusual
+          nicknames, an employer plus job title specific enough to single a
+          person out.
+        confidence: 0.6
+
+      - id: clinical_narrative
+        method: llm
+        citation: "45 CFR 160.103 - health information"
+        hint: >-
+          Free text describing an individual's physical or mental health,
+          treatment, or payment for care. Catches what no regex can: a
+          diagnosis written in prose, a medication list, a clinician's note.
+        confidence: 0.7
+
+  SUD:
+    description: >-
+      Substance use disorder treatment records from a Part 2 program. A
+      stricter regime than HIPAA sits on top of these: they may not be
+      disclosed without patient consent specific to the recipient, which a
+      pipeline cannot obtain on the patient's behalf.
+    citation: "42 CFR Part 2"
+    identifiers:
+      - id: part2_record
+        method: regex
+        citation: "42 CFR 2.12"
+        pattern: '\b(?i:42\s*CFR\s*Part\s*2|Part\s*2\s*program|substance\s+use\s+disorder\s+(?:treatment|program)|SUD\s+treatment|opioid\s+treatment\s+program|medication[-\s]assisted\s+treatment)\b'
+        token_entity: SUD
+        confidence: 0.9
+
+  PCI:
+    description: Payment card data. A covered entity still takes payment.
+    citation: "PCI DSS v4.0"
+    identifiers:
+      - id: pan
+        method: regex
+        citation: "PCI DSS 3.3"
+        pattern: '\b(?:4\d{3}|5[1-5]\d{2}|3[47]\d{2}|6011)[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'
+        token_entity: CARD
+        confidence: 0.95

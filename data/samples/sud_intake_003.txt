@@ -1,0 +1,20 @@
+SYNTHETIC RECORD - NOT REAL DATA - GENERATED FOR DEMONSTRATION ONLY
+Cedar Hollow Recovery Center (fictional) | Part 2 Program Intake
+
+NOTICE:
+This record is maintained by a 42 CFR Part 2 program. Redisclosure without
+specific written patient consent is prohibited.
+
+PATIENT DEMOGRAPHICS:
+Patient: Imogen Tarrow
+MRN: 7730114
+DOB: 07/21/1990
+
+ASSESSMENT:
+Intake for medication-assisted treatment. Opioid use disorder, moderate.
+Patient reports 14 months of non-prescribed opioid use and two prior
+withdrawal attempts without pharmacologic support.
+
+PLAN:
+Induction on buprenorphine-naloxone. Weekly counseling. Consent for
+disclosure to primary care not yet obtained.

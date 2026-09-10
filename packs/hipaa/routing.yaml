@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# What a model must be, for each sensitivity level, before data of that level
+# may be sent to it. Model attributes themselves live in config/models.yaml -
+# the pack states requirements, the deployment states facts.
+#
+# The engine checks this gate after explicit deny rules and before any allow
+# rule, so a pack author gets safe routing without writing a deny rule per
+# model.
+# ---------------------------------------------------------------------------
+requirements:
+  prohibited:
+    allow: false
+
+  restricted:
+    baa: true                # 45 CFR 164.308(b)(1) - business associate contract
+    zero_retention: true     # no PHI persisted by the processor
+    residency: [US]
+
+  internal: {}
+  public: {}

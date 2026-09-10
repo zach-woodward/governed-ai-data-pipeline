@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# Pack identity, and the two things that are pack-wide rather than per-rule:
+# what the audit log must capture, and how long things live.
+# ---------------------------------------------------------------------------
+id: hipaa
+name: HIPAA Security & Privacy Rule
+version: 1.0.0
+schema_version: 1
+status: complete
+jurisdiction: US
+authority: "45 CFR Parts 160, 162 and 164"
+
+audit:
+  # Fields every audit entry for a covered action must carry. The gateway
+  # refuses to emit an entry that is missing one of these.
+  required_fields:
+    - actor
+    - purpose
+    - resource_ids
+    - decision
+    - rule_id
+    - model_id
+    - redaction
+    - tokens_in
+    - tokens_out
+  citation: "45 CFR 164.312(b) - audit controls"
+  retain_days: 2190          # 6 years, per 45 CFR 164.316(b)(2)(i)
+
+retention:
+  default_output_days: 30
+  default_prompt_days: 2190
+  worm: false                # HIPAA does not require write-once media
+
+classifier:
+  # The LLM second pass is itself a governed model call. It runs through the
+  # gateway under rule HIPAA-005, against a pattern-redacted copy of the text,
+  # and it is denied outright on anything the pattern pass already flagged as
+  # prohibited. See classify/llm_pass.py.
+  llm_pass: true
+  target: claude-opus-5-baa
+  version_tag: hipaa-clf-1.0.0
+  max_chars: 12000

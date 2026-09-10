@@ -1,0 +1,17 @@
+levels: [public, internal, restricted, prohibited]
+default: internal
+rules:
+  - id: FS-CLS-CONCEAL
+    if: {identifiers: {any_of: [concealment_language]}}
+    level: prohibited
+    reason: >-
+      Language indicating an attempt to evade recordkeeping. This is escalated
+      to a supervisor, not summarized by a model.
+    citation: "FINRA Rule 3110(b); SEA Rule 17a-4(b)(4)"
+  - id: FS-CLS-MNPI
+    if: {data_types: {any_of: [MNPI]}}
+    level: restricted
+    citation: "SEA Rule 10b5-1"
+  - id: FS-CLS-PII
+    if: {data_types: {any_of: [PII, PCI]}}
+    level: restricted

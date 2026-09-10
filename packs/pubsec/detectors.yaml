@@ -1,0 +1,65 @@
+# STUB. A complete pack keys off the CUI Registry categories.
+data_types:
+
+  CUI:
+    description: Controlled Unclassified Information
+    citation: "32 CFR 2002.4(h)"
+    identifiers:
+      - id: banner_marking
+        method: regex
+        citation: "32 CFR 2002.20"
+        pattern: '\b(?i:CUI//[A-Z\-/]+|CONTROLLED\s+UNCLASSIFIED\s+INFORMATION|CUI\s*//\s*SP-[A-Z]+)'
+        token_entity: CUIMARK
+        confidence: 0.95
+      - id: dissemination_control
+        method: regex
+        citation: "32 CFR 2002.20(b)"
+        pattern: '\b(?i:NOFORN|FED\s?ONLY|FEDCON|NOCON|DL\s?ONLY|REL\s+TO\s+[A-Z]{3})\b'
+        token_entity: DISSEM
+        confidence: 0.9
+      - id: unmarked_cui_category
+        method: llm
+        citation: "32 CFR 2002.4"
+        hint: >-
+          Content that belongs to a CUI Registry category - privacy, law
+          enforcement, procurement, critical infrastructure - but carries no
+          banner marking. Unmarked CUI is still CUI.
+
+  PII:
+    description: Personally identifiable information
+    citation: "NIST SP 800-122"
+    identifiers:
+      - id: ssn
+        method: regex
+        pattern: '\b\d{3}-\d{2}-\d{4}\b'
+        token_entity: SSN
+        confidence: 0.98
+      - id: name
+        method: regex
+        pattern: '(?i:claimant|applicant|citizen|beneficiary|subject|recipient)(?i:[\s_\-]*name)?\s*[::]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z''\-]+)+)'
+        group: 1
+        token_entity: PERSON
+        confidence: 0.9
+      - id: case_number
+        method: regex
+        pattern: '(?i:case\s*(?:no\.?|number|#)?|file\s*(?:no\.?|number|#)?)\s*[::#]?\s*([A-Z]{2,4}-\d{4}-\d{4,8})\b'
+        group: 1
+        token_entity: CASE
+        confidence: 0.9
+      - id: address
+        method: regex
+        pattern: '\b\d{1,5}\s+[A-Z][A-Za-z]*(?:\s+[A-Z][A-Za-z]*){0,3}\s+(?i:Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Boulevard|Blvd|Court|Ct|Way|Place|Pl|Terrace|Ter)\b\.?'
+        token_entity: ADDRESS
+        confidence: 0.85
+      - id: phone
+        method: regex
+        pattern: '(?i:phone|tel|telephone|mobile|cell|contact)\s*[::]?\s*(\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+        group: 1
+        token_entity: PHONE
+        confidence: 0.9
+      - id: locality
+        method: regex
+        pattern: '\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2})\b'
+        group: 1
+        token_entity: CITY
+        confidence: 0.75

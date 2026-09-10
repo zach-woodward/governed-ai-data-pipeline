@@ -1,0 +1,8 @@
+requirements:
+  prohibited:
+    allow: false
+  restricted:
+    zero_retention: true
+    residency: [US]
+  internal: {}
+  public: {}

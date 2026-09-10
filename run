@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Convenience wrapper so `./run demo` works without activating the venv.
+set -euo pipefail
+cd "$(dirname "$0")"
+exec ./.venv/bin/python -m govpipe.cli "$@"
