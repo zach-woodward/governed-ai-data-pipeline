@@ -110,3 +110,31 @@ def test_query_filters(tmp_path):
     assert len(audit.query(c, since="0m")) == 0
     # JSON columns come back decoded
     assert audit.query(c, data_type="PHI")[0]["data_types"] == ["PHI"]
+
+
+def test_an_older_database_is_migrated_rather_than_broken(tmp_path):
+    """CREATE TABLE IF NOT EXISTS never alters an existing table, so a database
+    made before a column was added used to fail at query time with
+    'no such column'. Found when launchd started the service against a
+    pre-existing var/govpipe.db."""
+    import sqlite3
+
+    from govpipe.db import COLUMN_MIGRATIONS, connect, migrate
+
+    db = tmp_path / "old.db"
+    conn = connect(db)
+    # Simulate the older schema by dropping each post-release column.
+    for table, column, _ in COLUMN_MIGRATIONS:
+        cols = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")
+                if r["name"] != column]
+        conn.execute(f"CREATE TABLE {table}_old AS SELECT {', '.join(cols)} FROM {table}")
+        conn.execute(f"DROP TABLE {table}")
+        conn.execute(f"ALTER TABLE {table}_old RENAME TO {table}")
+        assert column not in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+
+    applied = migrate(conn)
+    assert applied == [f"{t}.{c}" for t, c, _ in COLUMN_MIGRATIONS]
+    for table, column, _ in COLUMN_MIGRATIONS:
+        assert column in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+    # And it is a no-op the second time.
+    assert migrate(conn) == []

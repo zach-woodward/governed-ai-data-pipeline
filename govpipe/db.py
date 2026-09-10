@@ -144,12 +144,39 @@ CREATE TABLE IF NOT EXISTS meta (
 """
 
 
+# Columns added to existing tables after the first release. `CREATE TABLE IF
+# NOT EXISTS` is idempotent for creation but never alters a table that already
+# exists, so a database made before a schema change would fail at query time
+# with "no such column". Each entry is applied only if the column is absent.
+#
+# Deliberately additive: nothing here drops or rewrites a column, because the
+# audit log's hash chain covers a fixed field set and a destructive migration
+# would invalidate every existing entry.
+COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
+    ("manifests", "classification_rule", "TEXT NOT NULL DEFAULT ''"),
+)
+
+
+def migrate(conn: sqlite3.Connection) -> list[str]:
+    """Bring an existing database up to the current schema. Returns what it did."""
+    applied = []
+    for table, column, ddl in COLUMN_MIGRATIONS:
+        existing = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        if not existing:
+            continue                      # table not created yet; SCHEMA handles it
+        if column not in existing:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+            applied.append(f"{table}.{column}")
+    return applied
+
+
 def connect(path: Path | str | None = None) -> sqlite3.Connection:
     path = Path(path) if path else DEFAULT_DB
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    migrate(conn)
     return conn
 
 
